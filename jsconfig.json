@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "checkJs": true,
+    "noEmit": true,
+    "target": "ES6",
+    "lib": ["ES6", "DOM"]
+  },
+  "include": ["*.js"],
+  "exclude": ["node_modules"]
+}

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Poisson Disc Sampling Test</title>
+  <style>
+    body {
+      font-family: monospace;
+      padding: 20px;
+      background: #1e1e1e;
+      color: #d4d4d4;
+    }
+    .test-result {
+      margin: 10px 0;
+      padding: 10px;
+      border-left: 3px solid #4ec9b0;
+    }
+    .error {
+      border-left-color: #f48771;
+    }
+    canvas {
+      border: 1px solid #555;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Poisson Disc Sampling Test</h1>
+  <div id="results"></div>
+  <canvas id="visualization" width="600" height="600"></canvas>
+
+  <script src="seededRandom.js"></script>
+  <script src="poissonDisc.js"></script>
+  <script>
+    const resultsDiv = document.getElementById('results');
+
+    function log(message, isError = false) {
+      const div = document.createElement('div');
+      div.className = 'test-result' + (isError ? ' error' : '');
+      div.textContent = message;
+      resultsDiv.appendChild(div);
+    }
+
+    // Test 1: Basic functionality
+    log('Test 1: Basic POI generation');
+    const rng = new SeededRandom(12345);
+    const config = {
+      minDistance: 10,
+      maxAttempts: 30,
+      gridWidth: 100,
+      gridHeight: 100
+    };
+
+    const playerSpawn = { x: 50, y: 50, radius: 3 };
+    const excludedZones = [playerSpawn];
+
+    try {
+      const pois = poissonDiscSampling(config, 15, excludedZones, rng);
+      log(`✓ Generated ${pois.length} POIs`);
+
+      // Test 2: Verify minimum spacing
+      log('\nTest 2: Verify minimum spacing');
+      let minDistanceViolation = false;
+      for (let i = 0; i < pois.length; i++) {
+        for (let j = i + 1; j < pois.length; j++) {
+          const dist = Math.sqrt(
+            Math.pow(pois[i].x - pois[j].x, 2) +
+            Math.pow(pois[i].y - pois[j].y, 2)
+          );
+          if (dist < config.minDistance) {
+            log(`✗ Distance violation: POI ${i} to POI ${j} = ${dist.toFixed(2)} (min: ${config.minDistance})`, true);
+            minDistanceViolation = true;
+          }
+        }
+      }
+      if (!minDistanceViolation) {
+        log('✓ All POIs maintain minimum distance');
+      }
+
+      // Test 3: Verify excluded zones
+      log('\nTest 3: Verify excluded zones');
+      let exclusionViolation = false;
+      for (let i = 0; i < pois.length; i++) {
+        const dist = Math.sqrt(
+          Math.pow(pois[i].x - playerSpawn.x, 2) +
+          Math.pow(pois[i].y - playerSpawn.y, 2)
+        );
+        if (dist < playerSpawn.radius) {
+          log(`✗ POI ${i} inside excluded zone: distance = ${dist.toFixed(2)}`, true);
+          exclusionViolation = true;
+        }
+      }
+      if (!exclusionViolation) {
+        log('✓ All POIs outside excluded zones');
+      }
+
+      // Test 4: Verify bounds
+      log('\nTest 4: Verify bounds');
+      let boundsViolation = false;
+      for (let i = 0; i < pois.length; i++) {
+        if (pois[i].x < 0 || pois[i].x >= config.gridWidth ||
+            pois[i].y < 0 || pois[i].y >= config.gridHeight) {
+          log(`✗ POI ${i} out of bounds: (${pois[i].x}, ${pois[i].y})`, true);
+          boundsViolation = true;
+        }
+      }
+      if (!boundsViolation) {
+        log('✓ All POIs within bounds');
+      }
+
+      // Test 5: Reproducibility
+      log('\nTest 5: Reproducibility');
+      const rng2 = new SeededRandom(12345);
+      const pois2 = poissonDiscSampling(config, 15, excludedZones, rng2);
+      let reproducible = true;
+      for (let i = 0; i < pois.length; i++) {
+        if (pois[i].x !== pois2[i].x || pois[i].y !== pois2[i].y) {
+          log(`✗ POI ${i} differs: (${pois[i].x}, ${pois[i].y}) vs (${pois2[i].x}, ${pois2[i].y})`, true);
+          reproducible = false;
+        }
+      }
+      if (reproducible) {
+        log('✓ Results are reproducible with same seed');
+      }
+
+      log('\n=== All tests passed! ===');
+
+      // Visualize results
+      const canvas = document.getElementById('visualization');
+      const ctx = canvas.getContext('2d');
+      const scale = 6; // Scale factor for visualization
+
+      // Draw background
+      ctx.fillStyle = '#1e1e1e';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Draw grid
+      ctx.strokeStyle = '#333';
+      ctx.lineWidth = 0.5;
+      for (let x = 0; x <= config.gridWidth; x += 10) {
+        ctx.beginPath();
+        ctx.moveTo(x * scale, 0);
+        ctx.lineTo(x * scale, config.gridHeight * scale);
+        ctx.stroke();
+      }
+      for (let y = 0; y <= config.gridHeight; y += 10) {
+        ctx.beginPath();
+        ctx.moveTo(0, y * scale);
+        ctx.lineTo(config.gridWidth * scale, y * scale);
+        ctx.stroke();
+      }
+
+      // Draw excluded zone
+      ctx.fillStyle = 'rgba(244, 135, 113, 0.2)';
+      ctx.beginPath();
+      ctx.arc(
+        playerSpawn.x * scale,
+        playerSpawn.y * scale,
+        playerSpawn.radius * scale,
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+
+      // Draw minimum distance circles
+      ctx.strokeStyle = 'rgba(78, 201, 176, 0.2)';
+      ctx.lineWidth = 1;
+      for (const poi of pois) {
+        ctx.beginPath();
+        ctx.arc(
+          poi.x * scale,
+          poi.y * scale,
+          config.minDistance * scale,
+          0,
+          Math.PI * 2
+        );
+        ctx.stroke();
+      }
+
+      // Draw POIs
+      ctx.fillStyle = '#4ec9b0';
+      for (const poi of pois) {
+        ctx.beginPath();
+        ctx.arc(poi.x * scale, poi.y * scale, 3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Draw player spawn
+      ctx.fillStyle = '#f48771';
+      ctx.beginPath();
+      ctx.arc(
+        playerSpawn.x * scale,
+        playerSpawn.y * scale,
+        4,
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+
+    } catch (error) {
+      log('✗ Error: ' + error.message, true);
+      console.error(error);
+    }
+  </script>
+</body>
+</html>

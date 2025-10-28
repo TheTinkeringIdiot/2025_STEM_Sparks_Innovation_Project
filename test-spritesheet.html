@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sprite Sheet Test</title>
+  <style>
+    body {
+      margin: 20px;
+      background: #222;
+      color: #fff;
+      font-family: monospace;
+    }
+    #spritesheet {
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+      border: 2px solid #fff;
+      background: repeating-conic-gradient(#808080 0% 25%, #696969 0% 50%) 50% / 20px 20px;
+    }
+    .info {
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Sprite Sheet Generator Test</h1>
+  <div class="info">
+    <p>Sprite Sheet Size: 200x240px (5 cols × 6 rows)</p>
+    <p>Frame Size: 40x40px</p>
+    <p>Seed: <input type="number" id="seed" value="12345"> <button onclick="regenerate()">Regenerate</button></p>
+  </div>
+  <canvas id="spritesheet" width="200" height="240"></canvas>
+
+  <script src="spriteGenerator.js"></script>
+  <script>
+    function regenerate() {
+      const seed = parseInt(document.getElementById('seed').value) || 12345;
+      const spriteSheet = generateSpriteSheet(seed);
+      const canvas = document.getElementById('spritesheet');
+      const ctx = canvas.getContext('2d');
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(spriteSheet, 0, 0);
+    }
+
+    // Generate initial sprite sheet
+    regenerate();
+  </script>
+</body>
+</html>

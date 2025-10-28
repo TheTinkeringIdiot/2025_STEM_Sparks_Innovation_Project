@@ -1,0 +1,59 @@
+I want to create an archeology themed game. The player is an archeologist seeking to uncover new discoveries using modern methods and tools. The player traverses levels by solving puzzles to acquire elements of the level's overall discovery. Game regions are arranged in islands. 
+
+Each level is presented in full from a bird's eye view, using graphics similar to Stardew Valley. There are no existing sprites, you will need to create adorable characters for each world and interesting backgrounds and map landscapes. Each level begins with the player needing to use a stadia rod to perform mapping of the level and reveal points of interest. The player learns more about each point of interest by moving to it and investigating using a magnifying glass. The result of that investigation will reveal which extraction tool is most appropriate for that point. The initial toolset is shovel, pickaxe, brush, and hammer and chisel. These extraction tools are unlocked progressively over the first 4 levels, as the player ivestigates points of interest. When investigating a point using the appropriate extraction tool, the player earns an artifact. 
+
+Players have money (initially $100) and can earn more by turning in their archeological artifacts to earn more. 
+
+Tech stack:
+All in-browser using HTML and javascript
+Players move using the keyboard WADS or the arrow keys and select tools from their inventory using the mouse. Spacebar is the action key to use tools on the current point where the player is standing. 
+The game is for large monitors and occupies a space of 1440 by 960.
+
+
+
+1. One island initially but more will be added later. Each island has 10 levels. 
+2. At this point the play is that the player discovers points of interest in the level and works to identify them using the magnifying glass and extraction tools. 
+3. Both, the narrative reward should be themed with the level. 
+4. Yes, once tools are unlocked the player has them from then on. 
+5. The magnifying glass gives hints about the appropriate extraction tool to use. 
+6. If the player uses the wrong tool for the POI, on the first incorrect tool activation the screen edges flash red and nothing happens. On the second incorrect activation, the POI is removed. 
+7. The shop is a museum available between levels. The player donates the discovered artifacts in return for continued funding (the player's money balance)
+8. Nothing yet, we will add that later. 
+9. Canvas
+10. Yes, save to local storage at the end of each level. 
+11. Yes generate pixel art, that may be replaced later.
+
+
+12. Fog of war style, the player moves and discovers more of the map as they do so. 
+13. 15 total POIs per level, 5 of which are junk that has little to no value
+14. Levels are procedurally generated
+15. That's a good starting point. 
+16. POIs are denoted by a glowing rhombus on the ground and on the map
+17. Yes, single protagonist stripe for all levels and islands
+18. Yes, level 1 is a tutorial. Other levels are normal. 
+19. Info is gathered at the museum, until then the discoveries are unknown beyond the icon.  
+20. The first island is Roman themed
+
+
+21. Consistent biome
+22. The player will walk around obstacles
+23. POIs are randomly placed, but always on a player accessible spot
+24. Artifacts can be repeated in each level
+25. Good artifacts earn the player $100, junk gets them a random value between $0 and $10
+26. Donate all
+27. Yes this is a good progression
+28. The full 15
+29. 5x the player's sprite width
+30. Multiple layers
+31. 40x40 for both the character sprite, and also 40x40 for the tile size. 
+
+
+32. Yes to both
+33. Yes, there should be an animation for tool use
+34. Defer for later
+35. The level starts with a small revealed starting area
+36. The stadia rod is activated by the player each time
+37. After the last POI is created, the player gets a Level Complete screen. 
+38. Congratulation screen with confetti, and then the next island unlocks (placeholder for now since we're only having one at the moment)
+39. Yes please create a predefined list of Roman artifacts with descriptions. 
+40. Only the donated items. 

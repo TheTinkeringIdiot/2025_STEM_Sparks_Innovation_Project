@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Archeology Game</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="game-container">
+        <!-- Multi-layer canvas setup for archeology game -->
+        <!-- Layer order: background (0) -> entities (1) -> fog (2) -> ui (3) -->
+        <canvas id="background-canvas" width="1440" height="960"></canvas>
+        <canvas id="entities-canvas" width="1440" height="960"></canvas>
+        <canvas id="fog-canvas" width="1440" height="960"></canvas>
+        <canvas id="ui-canvas" width="1440" height="960"></canvas>
+
+        <!-- HUD Overlay Elements -->
+        <div id="hud">
+            <!-- Top-left money display -->
+            <div id="money-display" class="hud-element">
+                <span id="money-amount">$0</span>
+            </div>
+
+            <!-- Bottom-center tool inventory bar -->
+            <div id="tool-bar" class="hud-element">
+                <div class="tool-slot" data-tool="shovel"></div>
+                <div class="tool-slot" data-tool="brush"></div>
+                <div class="tool-slot" data-tool="scanner"></div>
+                <div class="tool-slot" data-tool="pickaxe"></div>
+            </div>
+
+            <!-- Bottom-right minimap container -->
+            <div id="minimap-container" class="hud-element">
+                <canvas id="minimap" width="200" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Module Scripts - Load in dependency order -->
+    <!-- Core utilities -->
+    <script src="seededRandom.js"></script>
+    <script src="poissonDisc.js"></script>
+    <script src="pathfinding.js"></script>
+
+    <!-- State management -->
+    <script src="gameState.js"></script>
+
+    <!-- Rendering systems -->
+    <script src="canvasManager.js"></script>
+    <script src="camera.js"></script>
+    <script src="renderer.js"></script>
+    <script src="fogOfWar.js"></script>
+    <script src="fogRenderer.js"></script>
+    <script src="minimap.js"></script>
+    <script src="hudRenderer.js"></script>
+
+    <!-- Animation and effects -->
+    <script src="spriteGenerator.js"></script>
+    <script src="animator.js"></script>
+    <script src="visualEffects.js"></script>
+
+    <!-- Game logic -->
+    <script src="inputManager.js"></script>
+    <script src="player.js"></script>
+    <script src="toolSystem.js"></script>
+    <script src="levelGenerator.js"></script>
+    <script src="museum.js"></script>
+    <script src="levelProgression.js"></script>
+    <script src="tutorial.js"></script>
+
+    <!-- Main game loop -->
+    <script src="game.js"></script>
+
+    <script>
+        // Disable image smoothing on all canvas contexts for pixel-perfect rendering
+        (function initializeCanvases() {
+            const canvasIds = ['background-canvas', 'entities-canvas', 'fog-canvas', 'ui-canvas', 'minimap'];
+            canvasIds.forEach(id => {
+                const canvas = document.getElementById(id);
+                if (canvas) {
+                    const context = canvas.getContext('2d');
+                    if (context) {
+                        context.imageSmoothingEnabled = false;
+                    }
+                }
+            });
+        })();
+
+        // Start the game
+        (function startGame() {
+            try {
+                console.log('Initializing archeology game...');
+                const game = new Game();
+                game.initialize();
+                game.start();
+
+                // Make game instance available globally for debugging
+                window.game = game;
+                console.log('Game started successfully!');
+            } catch (error) {
+                console.error('Failed to start game:', error);
+                alert('Failed to start game. Check console for details: ' + error.message);
+            }
+        })();
+    </script>
+</body>
+</html>
