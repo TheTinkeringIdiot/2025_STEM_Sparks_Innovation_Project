@@ -31,6 +31,9 @@ class Game {
     this.fogOfWar = null;
     this.animator = null;
     this.fogRenderer = null;
+    this.tutorialManager = null;
+    this.minimap = null;
+    this.hudRenderer = null;
 
     // Player movement constants
     this.playerSpeed = 160; // pixels per second (4 tiles per second at 40px/tile)
@@ -63,6 +66,15 @@ class Game {
     // Initialize fog renderer
     const fogLayer = this.canvasManager.getLayer('fog');
     this.fogRenderer = new FogRenderer(fogLayer.canvas);
+
+    // Initialize tutorial manager
+    this.tutorialManager = new TutorialManager();
+
+    // Initialize minimap (72x48 tiles, 150x100px display)
+    this.minimap = new Minimap(72, 48, 150, 100);
+
+    // Initialize HUD renderer
+    this.hudRenderer = new HUDRenderer(1440, 960, this.minimap);
 
     // TODO: Initialize animator when sprite sheet is available
     // this.animator = new CharacterAnimator(spriteSheet);
@@ -147,6 +159,12 @@ class Game {
     // Get current input state
     const input = this.inputManager.getState();
 
+    // Process HUD input for tool selection
+    const toolChanged = this.hudRenderer.processInput(input, this.gameState);
+    if (toolChanged) {
+      this.canvasManager.markDirty('ui');
+    }
+
     // Process input and update player movement
     this.updatePlayerMovement(input, deltaSeconds);
 
@@ -156,11 +174,18 @@ class Game {
       this.animator.update(deltaTime);
     }
 
+    // Store previous camera position to detect movement
+    const prevCameraX = this.camera.worldX;
+    const prevCameraY = this.camera.worldY;
+
     // Update camera to follow player
     this.camera.centerOn(
       this.gameState.player.position.x,
       this.gameState.player.position.y
     );
+
+    // Check if camera moved
+    const cameraMoved = (prevCameraX !== this.camera.worldX || prevCameraY !== this.camera.worldY);
 
     // Update fog of war based on player position
     const fogUpdated = this.fogOfWar.updateFog(
@@ -168,8 +193,12 @@ class Game {
       this.gameState.player.position.y
     );
 
-    // Mark fog layer as dirty if fog was updated
-    if (fogUpdated) {
+    // Mark layers as dirty when camera moves or fog updates
+    if (cameraMoved) {
+      this.canvasManager.markDirty('background');
+      this.canvasManager.markDirty('fog');
+    } else if (fogUpdated) {
+      // Fog updated but camera didn't move (edge case)
       this.canvasManager.markDirty('fog');
     }
   }
@@ -216,14 +245,22 @@ class Game {
     const moveX = velocityX * this.playerSpeed * deltaSeconds;
     const moveY = velocityY * this.playerSpeed * deltaSeconds;
 
+    // Calculate new position
+    let newX = this.gameState.player.position.x + moveX;
+    let newY = this.gameState.player.position.y + moveY;
+
+    // Player boundary collision (16px radius, world is 2880×1920px)
+    const playerRadius = 16;
+    const worldWidth = this.camera.worldWidth;   // 2880px
+    const worldHeight = this.camera.worldHeight; // 1920px
+
+    // Clamp position to world bounds
+    newX = Math.max(playerRadius, Math.min(worldWidth - playerRadius, newX));
+    newY = Math.max(playerRadius, Math.min(worldHeight - playerRadius, newY));
+
     // Update player position (round to prevent sub-pixel rendering)
-    // TODO: Add collision detection here when level data is available
-    this.gameState.player.position.x = Math.round(
-      this.gameState.player.position.x + moveX
-    );
-    this.gameState.player.position.y = Math.round(
-      this.gameState.player.position.y + moveY
-    );
+    this.gameState.player.position.x = Math.round(newX);
+    this.gameState.player.position.y = Math.round(newY);
 
     // Update animation state based on movement
     // TODO: Call animator.setState() when animator is available
@@ -303,11 +340,46 @@ class Game {
     //   );
     // }
 
-    // TODO: Render POIs when level data is available
-    // this.gameState.level.pois.forEach(poi => {
-    //   const poiScreenPos = this.camera.worldToScreen(poi.x, poi.y);
-    //   // Draw POI marker
-    // });
+    // Render POIs
+    if (this.gameState.level.pois && this.gameState.level.pois.length > 0) {
+      this.gameState.level.pois.forEach(poi => {
+        // Convert tile coordinates to world coordinates (center of tile)
+        const worldX = poi.position.x * 40 + 20;
+        const worldY = poi.position.y * 40 + 20;
+
+        // Convert to screen coordinates
+        const poiScreenPos = this.camera.worldToScreen(worldX, worldY);
+
+        // Only render if in viewport
+        if (poiScreenPos.x < -40 || poiScreenPos.x > 1440 + 40 ||
+            poiScreenPos.y < -40 || poiScreenPos.y > 960 + 40) {
+          return;
+        }
+
+        // Draw POI marker
+        if (poi.discovered) {
+          // Discovered POI - green circle
+          ctx.fillStyle = '#4CAF50';
+          ctx.strokeStyle = '#2E7D32';
+        } else {
+          // Undiscovered POI - golden/yellow circle with glow
+          ctx.fillStyle = '#FFD700';
+          ctx.strokeStyle = '#FFA000';
+        }
+
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(poiScreenPos.x, poiScreenPos.y, 12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Add inner detail
+        ctx.fillStyle = poi.discovered ? '#81C784' : '#FFEB3B';
+        ctx.beginPath();
+        ctx.arc(poiScreenPos.x, poiScreenPos.y, 6, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
   }
 
   /**
@@ -316,15 +388,8 @@ class Game {
    * @param {CanvasRenderingContext2D} ctx - UI layer context
    */
   renderUI(ctx) {
-    // Render simple HUD
-    ctx.fillStyle = '#333';
-    ctx.font = '16px Arial';
-    ctx.fillText(`Money: $${this.gameState.player.money}`, 10, 25);
-    ctx.fillText(`Level: ${this.gameState.level.number}`, 10, 50);
-    ctx.fillText(`Tool: ${this.gameState.player.currentTool}`, 10, 75);
-
-    // TODO: Render minimap when minimap module is available
-    // TODO: Render inventory UI when needed
+    // Render full HUD with tool inventory and minimap
+    this.hudRenderer.render(ctx, this.gameState, this.fogOfWar, performance.now());
   }
 
   /**
@@ -384,6 +449,11 @@ class Game {
     this.canvasManager.markDirty('entities');
     this.canvasManager.markDirty('fog');
     this.canvasManager.markDirty('ui');
+
+    // 6. Show tutorial if this is level 1 and tutorial hasn't been completed
+    if (this.tutorialManager && this.tutorialManager.shouldShowTutorial(levelNumber)) {
+      this.tutorialManager.showTutorial();
+    }
 
     console.log(`Level ${levelNumber} loaded successfully`);
   }

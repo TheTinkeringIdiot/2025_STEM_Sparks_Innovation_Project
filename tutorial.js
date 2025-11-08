@@ -29,19 +29,19 @@ const TUTORIAL_STORAGE_KEY = 'archeology_tutorial_completed';
 const TUTORIAL_STEPS = [
   {
     step: 1,
-    text: 'Use WASD to move and explore'
+    text: 'Use WASD keys to move and explore the map'
   },
   {
     step: 2,
-    text: 'Find glowing POI markers'
+    text: 'Find glowing golden POI markers scattered across the level'
   },
   {
     step: 3,
-    text: 'Use magnifying glass at POI for hint'
+    text: 'Click tool icons at bottom center to select tools (MAG = magnifying glass)'
   },
   {
     step: 4,
-    text: 'Use correct tool to extract artifact'
+    text: 'Available tools: ROD (mapping), MAG (hints), SHV (shovel) for excavation'
   }
 ];
 
