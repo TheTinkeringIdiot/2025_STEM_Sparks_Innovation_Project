@@ -1,0 +1,14 @@
+2025-09-13 15:12:20,378 - INFO - context_portal_mcp.main - File logging configured to: /home/quigley/projects/claude/context_portal/./logs/conport.log
+2025-09-13 15:12:20,378 - INFO - context_portal_mcp.core.config - Database filename set to: context.db
+2025-09-13 15:12:20,379 - INFO - context_portal_mcp.main - Using database filename: context.db
+2025-09-13 15:12:20,380 - INFO - context_portal_mcp.main - Parsed CLI args: Namespace(host='127.0.0.1', port=8000, workspace_id='/home/quigley/projects/claude', auto_detect_workspace=True, workspace_search_start=None, no_auto_detect=False, mode='stdio', log_file='./logs/conport.log', db_path=None, base_path=None, db_filename='context.db', log_level='INFO')
+2025-09-13 15:12:20,381 - INFO - context_portal_mcp.main - Starting ConPort in STDIO mode with workspace detection enabled
+2025-09-13 15:12:20,382 - INFO - context_portal_mcp.core.workspace_detector - Workspace detected by strong indicators: /home/quigley/projects/claude
+2025-09-13 15:12:20,384 - INFO - context_portal_mcp.main - Workspace detection details: {'start_path': '/home/quigley/projects/claude', 'detected_workspace': '/home/quigley/projects/claude', 'context_portal_path': '/home/quigley/projects/claude/context_portal', 'detection_method': 'strong_indicators', 'indicators_found': ['.git', '.gitignore', 'README.md'], 'environment_variables': {'VSCODE_WORKSPACE_FOLDER': None, 'CONPORT_WORKSPACE': None, 'PWD': '/home/quigley/projects/claude', 'CWD': '/home/quigley/projects/claude'}}
+2025-09-13 15:12:20,384 - INFO - context_portal_mcp.main - Effective workspace ID: /home/quigley/projects/claude
+2025-09-13 15:12:20,384 - INFO - context_portal_mcp.main - Pre-warming database connection for workspace: /home/quigley/projects/claude
+2025-09-13 15:12:20,385 - INFO - context_portal_mcp.db.database - Alembic.ini not found. Creating at /home/quigley/projects/claude/context_portal/alembic.ini
+2025-09-13 15:12:20,387 - INFO - context_portal_mcp.db.database - Alembic env.py not found. Creating at /home/quigley/projects/claude/context_portal/alembic/env.py
+2025-09-13 15:12:20,389 - INFO - context_portal_mcp.db.database - Initial schema not found. Creating at /home/quigley/projects/claude/context_portal/alembic/versions/2025_06_17_initial_schema.py
+2025-09-13 15:12:20,408 - INFO - context_portal_mcp.db.database - Alembic: Script directory /home/quigley/projects/claude/context_portal/alembic confirmed to exist by Python.
+2025-09-13 15:12:20,408 - INFO - context_portal_mcp.db.database - Running Alembic migrations for database: /home/quigley/projects/claude/context_portal/context.db

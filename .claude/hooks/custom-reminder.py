@@ -1,0 +1,116 @@
+#!/usr/bin/env python3
+"""
+Hook that adds debugging or investigation prompts based on trigger words in user messages.
+"""
+import json
+import re
+import sys
+
+# Debugging trigger patterns
+DEBUG_PATTERNS = [
+    r'\b(debug|debugging|bug)\b',
+    r'\b(why.*not work|what.*wrong|not working)\b',
+    r'\b(stack trace|error message|exception|\^\^\^)\b'
+]
+
+# Investigation trigger patterns  
+INVESTIGATION_PATTERNS = [
+    r'\b(investigate|research|analyze|examine|explore|understand)\b',
+    r'\b(how does.*work|figure out|explain|find out)\b',
+    r'\b(code review|audit|inspect)\b'
+]
+
+# Prompt improvement trigger patterns
+PROMPT_IMPROVEMENT_PATTERNS = [
+    r'\b(improv|enhanc).*\b(prompt|prompting)\b',
+    r'\b(prompt|prompting).*\b(improv|enhanc)\b',
+    r'\b(better|optimize|refine).*\b(prompt|prompting)\b',
+    r'\b(prompt|prompting).*\b(better|optimize|refine)\b'
+]
+
+DEBUG_PROMPT = """
+<system-reminder>The user has mentioned a key word or phrase that triggers this reminder. 
+
+<debugging-workflow>
+1. **Understand the codebase** - Read relevant files/tables/documents to understand the codebase
+2. **Identify 5-8 most likely root causes** - List potential reasons for the issue
+3. **Choose the 3 most likely causes** - Prioritize based on probability and impact
+4. **Decide whether to implement or debug** - If the cause is obvious, implement the fix and inform the user. If the cause is not obvious, continue this workflow.
+
+Steps for Non-obvious Causes:
+5. **For each of the 3 causes, validate by adding targeted logging/debugging**
+6. **Let the user test** - Have them run the code with the new logging
+7. **Fix when solution is found** - Implement the actual fix once root cause is confirmed
+8. **Remove debugging logs** - Clean up temporary debugging code
+
+Include relevant debugging commands/tools and explain your reasoning for each step.
+</debugging-workflow>
+
+</system-reminder>
+"""
+
+INVESTIGATION_PROMPT = """
+<system-reminder>The user has mentioned a key word or phrase that triggers this reminder.
+
+<investigation-workflow>
+1. **Assess scope**: Read provided files directly. Use code-finder for unknown/large codebases, direct tools (Read/Grep/Glob) for simple searches.
+
+2. **Use code-finder when**: Complex investigations, no clear starting point, discovering patterns across many files, unclear functionality location.
+
+3. **Use direct tools when**: Simple searches in known files, specific paths provided, trivial lookups.
+
+4. **Flow**: Start with context → code-finder for broad discovery → understand before suggesting → answer first, implement if asked.
+
+5. **Multiple agents**: Split non-overlapping domains, launch parallel in single function_calls block. Example: backend/, frontend/, tests/ agents.
+
+Example: "Investigate and make plan out Stripe integration" → Use multiple code-finder tasks
+Example: "Where is combat implemented?" → Use code-finder task
+Example: "Do we have a formatDate function" → Use grep/bash/etc tools directly
+</investigation-workflow>
+
+This workflow ensures efficient investigation based on task complexity.
+"""
+
+PROMPT_IMPROVEMENT_PROMPT = """
+<system-reminder>The user has mentioned improving or enhancing prompts/prompting.
+
+CRITICAL: You MUST first read ~/.claude/guides/prompting-guide.md for comprehensive guidance on writing effective prompts. If you haven't read this guide yet in this conversation, read it immediately before proceeding with any prompt-related suggestions.
+
+Only after reading and understanding this guide should you provide prompt improvement recommendations.
+
+If the user is not looking to improve a prompt, or you have already read the guide, ignore this reminder.
+</system-reminder>
+"""
+
+def check_patterns(text, patterns):
+    """Check if any pattern matches the text (case insensitive)."""
+    for pattern in patterns:
+        if re.search(pattern, text, re.IGNORECASE):
+            return True
+    return False
+
+try:
+    input_data = json.load(sys.stdin)
+except json.JSONDecodeError as e:
+    print(f"Error: Invalid JSON input: {e}", file=sys.stderr)
+    sys.exit(1)
+
+prompt = input_data.get("prompt", "")
+
+# Check for debugging triggers
+if check_patterns(prompt, DEBUG_PATTERNS):
+    print(DEBUG_PROMPT)
+    sys.exit(0)
+
+# Check for investigation triggers  
+if check_patterns(prompt, INVESTIGATION_PATTERNS):
+    print(INVESTIGATION_PROMPT)
+    sys.exit(0)
+
+# Check for prompt improvement triggers
+if check_patterns(prompt, PROMPT_IMPROVEMENT_PATTERNS):
+    print(PROMPT_IMPROVEMENT_PROMPT)
+    sys.exit(0)
+
+# No triggers matched, allow normal processing
+sys.exit(0)

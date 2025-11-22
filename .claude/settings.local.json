@@ -1,0 +1,36 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm test:*)",
+      "Bash(npm run type-check:*)",
+      "mcp__playwright__browser_navigate",
+      "mcp__playwright__browser_click",
+      "Bash(find:*)",
+      "Bash(npx tsc:*)",
+      "mcp__playwright__browser_console_messages",
+      "Bash(grep:*)",
+      "mcp__playwright__browser_wait_for",
+      "mcp__playwright__browser_press_key",
+      "Bash(jq:*)",
+      "Bash(mkdir:*)",
+      "Bash(python:*)",
+      "Bash(psql:*)",
+      "Bash(python3:*)",
+      "Bash(npx tsc-files:*)",
+      "mcp__playwright__browser_snapshot",
+      "mcp__playwright__browser_evaluate",
+      "Bash(npx vue-tsc:*)",
+      "Bash(node:*)",
+      "WebSearch"
+    ]
+  },
+  "enableAllProjectMcpServers": true,
+  "enabledMcpjsonServers": [
+    "playwright",
+    "context7"
+  ],
+  "disabledMcpjsonServers": [
+    "sql"
+  ],
+  "outputStyle": "Sr. Software Developer"
+}
