@@ -44,8 +44,8 @@ class HUDRenderer {
     this.inventoryBarY = Math.round(viewportHeight - this.inventoryBarHeight - 20);
 
     // Minimap position (bottom-right, round coordinates for performance)
-    this.minimapX = Math.round(viewportWidth - 150 - 20);
-    this.minimapY = Math.round(viewportHeight - 100 - 20);
+    this.minimapX = Math.round(viewportWidth - 243 - 20);
+    this.minimapY = Math.round(viewportHeight - 162 - 20);
 
     // Money display position (top-left)
     this.moneyX = 20;
@@ -101,20 +101,6 @@ class HUDRenderer {
    * @param {number} timestamp - Current timestamp for minimap throttling
    */
   render(ctx, gameState, fog, timestamp) {
-    // Check if redraw is needed
-    if (!this.needsRedraw(gameState)) {
-      // Still need to update minimap (it has its own throttling)
-      if (gameState.player.position) {
-        const playerTileX = Math.floor(gameState.player.position.x / 40);
-        const playerTileY = Math.floor(gameState.player.position.y / 40);
-        this.minimap.update(fog, playerTileX, playerTileY, timestamp);
-      }
-      return; // No redraw needed
-    }
-
-    // Clear UI layer before redrawing
-    ctx.clearRect(0, 0, this.viewportWidth, this.viewportHeight);
-
     // Render money display (top-left)
     this.renderMoney(ctx, gameState.player.money);
 
@@ -125,7 +111,7 @@ class HUDRenderer {
     if (gameState.player.position) {
       const playerTileX = Math.floor(gameState.player.position.x / 40);
       const playerTileY = Math.floor(gameState.player.position.y / 40);
-      this.minimap.update(fog, playerTileX, playerTileY, timestamp);
+      this.minimap.update(fog, playerTileX, playerTileY, timestamp, gameState.level.grid);
     }
     this.minimap.render(ctx, this.minimapX, this.minimapY);
 
@@ -359,7 +345,7 @@ class HUDRenderer {
     if (gameState.player.position) {
       const playerTileX = Math.floor(gameState.player.position.x / 40);
       const playerTileY = Math.floor(gameState.player.position.y / 40);
-      this.minimap.forceUpdate(fog, playerTileX, playerTileY);
+      this.minimap.forceUpdate(fog, playerTileX, playerTileY, gameState.level.grid);
     }
 
     // Render

@@ -60,6 +60,7 @@ class LevelGenerator {
   constructor(config) {
     this.config = {
       seed: config.seed || Date.now(),
+      levelNumber: config.levelNumber || 1,
       width: MAP_WIDTH_TILES,
       height: MAP_HEIGHT_TILES,
       poiCount: POI_COUNT,
@@ -539,25 +540,50 @@ class LevelGenerator {
 
   /**
    * Assign artifact to POI (10 valuable, 5 junk)
+   * Only assigns artifacts that require tools available at current level
    * @param {number} poiIndex - POI index
    * @returns {Object} Artifact data
    */
   assignArtifactToPOI(poiIndex) {
     const isValuable = poiIndex < 10; // First 10 are valuable
 
-    let artifactIds;
+    // Get available tools for this level
+    const availableTools = this.getAvailableTools();
+
+    // Build list of artifacts that require only available tools
+    let artifactIds = [];
+
     if (isValuable) {
-      artifactIds = [
-        'amphora', 'denarius_coin', 'mosaic_tile', 'oil_lamp', 'fibula',
-        'strigil', 'signet_ring', 'fresco_fragment', 'gladius_pommel', 'votive_statue'
-      ];
+      // Valuable artifacts filtered by available tools
+      const valuableArtifacts = {
+        shovel: ['amphora', 'oil_lamp', 'votive_statue'],
+        pickaxe: ['mosaic_tile', 'fresco_fragment'],
+        brush: ['denarius_coin', 'signet_ring', 'fibula'],
+        hammer_chisel: ['strigil', 'gladius_pommel']
+      };
+
+      for (const tool of availableTools) {
+        if (valuableArtifacts[tool]) {
+          artifactIds.push(...valuableArtifacts[tool]);
+        }
+      }
     } else {
-      artifactIds = [
-        'broken_pottery', 'corroded_nail', 'stone_fragment', 'animal_bone', 'weathered_brick'
-      ];
+      // Junk artifacts filtered by available tools
+      const junkArtifacts = {
+        shovel: ['corroded_nail', 'animal_bone'],
+        pickaxe: ['stone_fragment'],
+        brush: ['broken_pottery'],
+        hammer_chisel: ['weathered_brick']
+      };
+
+      for (const tool of availableTools) {
+        if (junkArtifacts[tool]) {
+          artifactIds.push(...junkArtifacts[tool]);
+        }
+      }
     }
 
-    // Get artifact from catalog
+    // Get random artifact from available pool
     const artifactId = this.rng.choice(artifactIds);
 
     // Return artifact reference (will be looked up in ARTIFACT_CATALOG)
@@ -565,6 +591,23 @@ class LevelGenerator {
       id: artifactId,
       isValuable
     };
+  }
+
+  /**
+   * Get available excavation tools for current level
+   * @returns {Array<string>} Array of tool IDs
+   */
+  getAvailableTools() {
+    const level = this.config.levelNumber;
+
+    // Tool unlock progression matches TOOL_UNLOCKS from gameState.js
+    const tools = ['shovel']; // Level 1 always has shovel
+
+    if (level >= 2) tools.push('pickaxe');
+    if (level >= 3) tools.push('brush');
+    if (level >= 4) tools.push('hammer_chisel');
+
+    return tools;
   }
 
   /**

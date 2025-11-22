@@ -34,6 +34,9 @@ class Game {
     this.tutorialManager = null;
     this.minimap = null;
     this.hudRenderer = null;
+    this.flashEffect = null;
+    this.confettiSystem = null;
+    this.toolSystem = null;
 
     // Player movement constants
     this.playerSpeed = 160; // pixels per second (4 tiles per second at 40px/tile)
@@ -47,9 +50,9 @@ class Game {
     // Initialize canvas manager (4 layers: background, entities, fog, ui)
     this.canvasManager = new CanvasManager('game-container', 1440, 960);
 
-    // Initialize input manager
-    const entitiesLayer = this.canvasManager.getLayer('entities');
-    this.inputManager = new InputManager(entitiesLayer.canvas);
+    // Initialize input manager on UI layer (topmost canvas) to capture hotbar clicks
+    const uiLayer = this.canvasManager.getLayer('ui');
+    this.inputManager = new InputManager(uiLayer.canvas);
 
     // Initialize camera system
     this.camera = new Camera();
@@ -70,14 +73,26 @@ class Game {
     // Initialize tutorial manager
     this.tutorialManager = new TutorialManager();
 
-    // Initialize minimap (72x48 tiles, 150x100px display)
-    this.minimap = new Minimap(72, 48, 150, 100);
+    // Initialize minimap (72x48 tiles, 243x162px display)
+    this.minimap = new Minimap(72, 48, 243, 162);
 
     // Initialize HUD renderer
     this.hudRenderer = new HUDRenderer(1440, 960, this.minimap);
 
+    // Initialize visual effects
+    this.flashEffect = new FlashEffect(this.canvasManager);
+    this.confettiSystem = new ConfettiSystem();
+
     // TODO: Initialize animator when sprite sheet is available
     // this.animator = new CharacterAnimator(spriteSheet);
+
+    // Initialize tool system (animator currently null per TODO above)
+    this.toolSystem = new ToolSystem(
+      this.gameState,
+      this.animator, // null for now
+      this.flashEffect,
+      this.confettiSystem
+    );
 
     console.log('Game systems initialized');
 
@@ -165,6 +180,11 @@ class Game {
       this.canvasManager.markDirty('ui');
     }
 
+    // Handle tool usage (spacebar)
+    if (input.keys.space && !this.toolSystem.isToolAnimating()) {
+      this.toolSystem.useTool();
+    }
+
     // Process input and update player movement
     this.updatePlayerMovement(input, deltaSeconds);
 
@@ -173,6 +193,13 @@ class Game {
       // Note: animator.update expects deltaTime in milliseconds
       this.animator.update(deltaTime);
     }
+
+    // Update tool system
+    this.toolSystem.update(deltaTime);
+
+    // Update visual effects
+    this.flashEffect.update(deltaTime);
+    this.confettiSystem.update(deltaTime);
 
     // Store previous camera position to detect movement
     const prevCameraX = this.camera.worldX;
@@ -211,6 +238,11 @@ class Game {
    * @param {number} deltaSeconds - Delta time in seconds
    */
   updatePlayerMovement(input, deltaSeconds) {
+    // Block movement during tool animations
+    if (this.toolSystem.isToolAnimating()) {
+      return; // Don't process movement
+    }
+
     // Calculate movement vector
     let velocityX = 0;
     let velocityY = 0;
@@ -303,13 +335,10 @@ class Game {
       fogLayer.needsRedraw = false;
     }
 
-    // 4. Render UI layer (only if dirty)
+    // 4. Render UI layer (minimap needs continuous updates)
     const uiLayer = this.canvasManager.getLayer('ui');
-    if (uiLayer.needsRedraw) {
-      this.canvasManager.clearLayer('ui');
-      this.renderUI(uiLayer.context);
-      uiLayer.needsRedraw = false;
-    }
+    this.canvasManager.clearLayer('ui');
+    this.renderUI(uiLayer.context);
   }
 
   /**
@@ -356,30 +385,31 @@ class Game {
           return;
         }
 
-        // Draw POI marker
+        // Draw POI marker as question mark
+        ctx.font = 'bold 71px monospace';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
         if (poi.discovered) {
-          // Discovered POI - green circle
-          ctx.fillStyle = '#4CAF50';
+          // Discovered POI - green question mark
           ctx.strokeStyle = '#2E7D32';
+          ctx.fillStyle = '#4CAF50';
         } else {
-          // Undiscovered POI - golden/yellow circle with glow
+          // Undiscovered POI - golden question mark
+          ctx.strokeStyle = '#B8860B';
           ctx.fillStyle = '#FFD700';
-          ctx.strokeStyle = '#FFA000';
         }
 
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(poiScreenPos.x, poiScreenPos.y, 12, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-
-        // Add inner detail
-        ctx.fillStyle = poi.discovered ? '#81C784' : '#FFEB3B';
-        ctx.beginPath();
-        ctx.arc(poiScreenPos.x, poiScreenPos.y, 6, 0, Math.PI * 2);
-        ctx.fill();
+        // Draw outline for visibility
+        ctx.lineWidth = 3;
+        ctx.strokeText('?', poiScreenPos.x, poiScreenPos.y);
+        // Draw filled question mark
+        ctx.fillText('?', poiScreenPos.x, poiScreenPos.y);
       });
     }
+
+    // Render confetti particles
+    this.confettiSystem.render(ctx);
   }
 
   /**
@@ -390,6 +420,12 @@ class Game {
   renderUI(ctx) {
     // Render full HUD with tool inventory and minimap
     this.hudRenderer.render(ctx, this.gameState, this.fogOfWar, performance.now());
+
+    // Render flash effect overlay
+    this.flashEffect.render(ctx);
+
+    // Render tool hint text
+    this.toolSystem.renderHint(ctx, 1440, 960);
   }
 
   /**
@@ -402,10 +438,11 @@ class Game {
     // 1. Generate level using LevelGenerator
     const levelConfig = {
       seed: levelNumber,
+      levelNumber: levelNumber,  // Pass level number for tool-appropriate artifact assignment
       width: 72,
       height: 48,
       poiCount: 15,
-      minPOISpacing: 4,  // 4 tiles spacing (effective 4-8 tiles with Poisson annulus)
+      minPOISpacing: 10,  // 10 tiles spacing (400px) for better distribution across map
       obstacleDensity: 0.3,
       theme: 'roman'
     };
@@ -418,9 +455,17 @@ class Game {
     this.gameState.level.island = level.config.theme;
     this.gameState.level.pois = level.pois;
     this.gameState.level.obstacles = level.obstacles || [];
+    this.gameState.level.grid = level.grid;
 
     // Update inventory for level
     updateInventoryForLevel(this.gameState, levelNumber);
+
+    // Update minimap with POI positions
+    const minimapPOIs = level.pois.map(poi => ({
+      x: poi.position.x,
+      y: poi.position.y
+    }));
+    this.minimap.setPOIs(minimapPOIs);
 
     // 2. Pre-render map to background layer
     const backgroundLayer = this.canvasManager.getLayer('background');

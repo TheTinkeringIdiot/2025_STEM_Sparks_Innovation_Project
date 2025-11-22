@@ -129,7 +129,7 @@ class ToolSystem {
     }
 
     // Get artifact and its required tool
-    const artifact = getArtifact(nearbyPOI.artifact);
+    const artifact = getArtifact(nearbyPOI.artifact.id);
     if (!artifact) {
       this.hintText = 'Unknown artifact type';
       this.hintStartTime = performance.now();
@@ -160,9 +160,9 @@ class ToolSystem {
     this.startToolAnimation(toolId);
 
     // Get artifact and check if tool is correct
-    const artifact = getArtifact(nearbyPOI.artifact);
+    const artifact = getArtifact(nearbyPOI.artifact.id);
     if (!artifact) {
-      console.error('Invalid artifact ID:', nearbyPOI.artifact);
+      console.error('Invalid artifact ID:', nearbyPOI.artifact.id);
       return true;
     }
 
@@ -219,8 +219,10 @@ class ToolSystem {
    * @param {Object} artifact - Artifact extracted
    */
   handleCorrectTool(poi, artifact) {
-    // Play confetti at POI location
-    this.confettiSystem.emit(poi.x, poi.y, 40);
+    // Play confetti at POI location (convert tile coords to world pixels)
+    const worldX = poi.position.x * 40 + 20;
+    const worldY = poi.position.y * 40 + 20;
+    this.confettiSystem.emit(worldX, worldY, 40);
 
     // Add artifact to player inventory
     if (!this.gameState.player.inventory) {
@@ -278,8 +280,9 @@ class ToolSystem {
 
     // Check all POIs in level
     for (const poi of this.gameState.level.pois) {
-      const poiTileX = Math.floor(poi.x / 40);
-      const poiTileY = Math.floor(poi.y / 40);
+      // POIs already stored in tile coordinates
+      const poiTileX = poi.position.x;
+      const poiTileY = poi.position.y;
 
       // Check if within 1 tile distance (Manhattan distance)
       const dx = Math.abs(playerTileX - poiTileX);
@@ -341,7 +344,7 @@ class ToolSystem {
   }
 
   /**
-   * Render hint text overlay
+   * Render hint text as dialog box
    * Should be called from the UI rendering layer
    * @param {CanvasRenderingContext2D} ctx - Canvas rendering context
    * @param {number} canvasWidth - Width of canvas
@@ -360,22 +363,65 @@ class ToolSystem {
       alpha = remaining / 500;
     }
 
-    // Render hint text at bottom center
     ctx.save();
     ctx.globalAlpha = alpha;
-    ctx.font = '20px Arial';
+
+    // Draw semi-transparent overlay backdrop
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+    // Dialog box dimensions
+    const dialogWidth = 600;
+    const dialogHeight = 150;
+    const dialogX = (canvasWidth - dialogWidth) / 2;
+    const dialogY = (canvasHeight - dialogHeight) / 2;
+
+    // Draw dialog box background
+    ctx.fillStyle = 'rgba(40, 40, 40, 0.95)';
+    ctx.fillRect(dialogX, dialogY, dialogWidth, dialogHeight);
+
+    // Draw dialog box border
+    ctx.strokeStyle = '#FFD700'; // Gold border
+    ctx.lineWidth = 4;
+    ctx.strokeRect(dialogX, dialogY, dialogWidth, dialogHeight);
+
+    // Draw message text
+    ctx.font = 'bold 24px monospace';
     ctx.fillStyle = '#FFFFFF';
-    ctx.strokeStyle = '#000000';
-    ctx.lineWidth = 3;
     ctx.textAlign = 'center';
-    ctx.textBaseline = 'bottom';
+    ctx.textBaseline = 'middle';
 
-    const x = canvasWidth / 2;
-    const y = canvasHeight - 40;
+    const textX = canvasWidth / 2;
+    const textY = canvasHeight / 2;
 
-    // Draw text with outline for visibility
-    ctx.strokeText(this.hintText, x, y);
-    ctx.fillText(this.hintText, x, y);
+    // Word wrap for long messages
+    const words = this.hintText.split(' ');
+    const lines = [];
+    let currentLine = '';
+
+    for (const word of words) {
+      const testLine = currentLine + (currentLine ? ' ' : '') + word;
+      const metrics = ctx.measureText(testLine);
+
+      if (metrics.width > dialogWidth - 40) {
+        lines.push(currentLine);
+        currentLine = word;
+      } else {
+        currentLine = testLine;
+      }
+    }
+    lines.push(currentLine);
+
+    // Draw each line centered
+    const lineHeight = 32;
+    const totalHeight = lines.length * lineHeight;
+    let startY = textY - totalHeight / 2 + lineHeight / 2;
+
+    for (const line of lines) {
+      ctx.fillText(line, textX, startY);
+      startY += lineHeight;
+    }
+
     ctx.restore();
   }
 }

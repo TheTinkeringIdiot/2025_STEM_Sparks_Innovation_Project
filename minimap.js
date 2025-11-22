@@ -66,6 +66,17 @@ class Minimap {
     // Player position cache
     this.playerX = 0;
     this.playerY = 0;
+
+    // Level grid cache for terrain rendering
+    this.levelGrid = null;
+
+    // Terrain colors
+    this.terrainColors = {
+      'stone': { r: 128, g: 128, b: 128 }, // #808080
+      'dirt': { r: 139, g: 69, b: 19 },    // #8B4513
+      'grass': { r: 34, g: 139, b: 34 },   // #228B22
+      'sand': { r: 244, g: 164, b: 96 }    // #F4A460
+    };
   }
 
   /**
@@ -96,22 +107,29 @@ class Minimap {
    * @param {number} playerTileX - Player X position in tiles
    * @param {number} playerTileY - Player Y position in tiles
    * @param {number} timestamp - Current timestamp for throttling
+   * @param {Array} levelGrid - Level grid data for terrain rendering
    */
-  update(fog, playerTileX, playerTileY, timestamp) {
+  update(fog, playerTileX, playerTileY, timestamp, levelGrid) {
     // Throttle updates to 500ms interval
     if (!this.shouldUpdate(timestamp)) {
       return;
     }
 
-    // Cache player position for rendering
+    // Cache level grid and player position for rendering
+    this.levelGrid = levelGrid;
     this.playerX = playerTileX;
     this.playerY = playerTileY;
 
-    // Clear minimap canvas
+    // Clear minimap canvas to black
     this.minimapCtx.fillStyle = '#000000';
     this.minimapCtx.fillRect(0, 0, this.minimapWidth, this.minimapHeight);
 
-    // Render fog using ImageData API for performance
+    // Render terrain (only in fog-revealed areas)
+    if (this.levelGrid) {
+      this._renderTerrain(fog);
+    }
+
+    // Render fog overlay (darkens unexplored/explored areas)
     this._renderFog(fog);
 
     // Render POI markers (only if revealed by fog)
@@ -119,6 +137,57 @@ class Minimap {
 
     // Render player position
     this._renderPlayer();
+  }
+
+  /**
+   * Renders terrain tiles using ImageData API
+   * Only renders tiles that are explored or visible (not unexplored)
+   * @private
+   * @param {FogOfWar} fog - Fog-of-war instance for visibility check
+   */
+  _renderTerrain(fog) {
+    const ctx = this.fogCtx;
+
+    // Create ImageData at map resolution (1 pixel per tile)
+    const imageData = ctx.createImageData(this.mapWidthTiles, this.mapHeightTiles);
+    const data = imageData.data;
+
+    // Iterate through all tiles and render terrain colors
+    for (let y = 0; y < this.mapHeightTiles; y++) {
+      for (let x = 0; x < this.mapWidthTiles; x++) {
+        const fogState = fog.getFogState(x, y);
+        const pixelIndex = (y * this.mapWidthTiles + x) * 4;
+
+        // Only render terrain for explored or visible tiles
+        if (fogState === 0) { // UNEXPLORED - leave black
+          data[pixelIndex] = 0;     // R
+          data[pixelIndex + 1] = 0; // G
+          data[pixelIndex + 2] = 0; // B
+          data[pixelIndex + 3] = 255; // Fully opaque black
+        } else {
+          // Get tile type from level grid
+          const tile = this.levelGrid[y][x];
+          const tileType = tile.type || 'stone';
+          const color = this.terrainColors[tileType] || this.terrainColors['stone'];
+
+          // Set terrain color
+          data[pixelIndex] = color.r;     // R
+          data[pixelIndex + 1] = color.g; // G
+          data[pixelIndex + 2] = color.b; // B
+          data[pixelIndex + 3] = 255;     // Fully opaque
+        }
+      }
+    }
+
+    // Put ImageData onto fog canvas at map resolution
+    ctx.putImageData(imageData, 0, 0);
+
+    // Scale terrain down to minimap resolution
+    this.minimapCtx.drawImage(
+      this.fogCanvas,
+      0, 0, this.mapWidthTiles, this.mapHeightTiles,
+      this.offsetX, this.offsetY, this.renderedWidth, this.renderedHeight
+    );
   }
 
   /**
@@ -133,26 +202,24 @@ class Minimap {
     const imageData = ctx.createImageData(this.mapWidthTiles, this.mapHeightTiles);
     const data = imageData.data;
 
-    // Iterate through all fog tiles and set pixel colors
+    // Iterate through all fog tiles and create darkening overlay
     for (let y = 0; y < this.mapHeightTiles; y++) {
       for (let x = 0; x < this.mapWidthTiles; x++) {
         const fogState = fog.getFogState(x, y);
         const pixelIndex = (y * this.mapWidthTiles + x) * 4;
 
-        // Set pixel color based on fog state
-        // RGB channels are always black (0, 0, 0)
-        // Only alpha channel varies
-        data[pixelIndex] = 0;     // R
-        data[pixelIndex + 1] = 0; // G
-        data[pixelIndex + 2] = 0; // B
+        // Black overlay with varying alpha based on fog state
+        data[pixelIndex] = 0;     // R - black
+        data[pixelIndex + 1] = 0; // G - black
+        data[pixelIndex + 2] = 0; // B - black
 
-        // Alpha channel based on fog state
+        // Alpha channel based on fog state (darkens terrain)
         if (fogState === 2) { // VISIBLE
-          data[pixelIndex + 3] = 0; // Fully transparent
+          data[pixelIndex + 3] = 0; // Fully transparent - terrain shows through
         } else if (fogState === 1) { // EXPLORED
-          data[pixelIndex + 3] = 77; // 30% opacity (77/255 ≈ 0.30)
+          data[pixelIndex + 3] = 100; // 40% opacity - dims terrain slightly
         } else { // UNEXPLORED (0)
-          data[pixelIndex + 3] = 230; // 90% opacity (230/255 ≈ 0.90)
+          data[pixelIndex + 3] = 0; // Fully transparent - terrain already black
         }
       }
     }
@@ -160,7 +227,7 @@ class Minimap {
     // Put ImageData onto fog canvas at map resolution
     ctx.putImageData(imageData, 0, 0);
 
-    // Scale fog canvas down to minimap resolution
+    // Scale fog overlay down to minimap resolution and composite on top
     this.minimapCtx.drawImage(
       this.fogCanvas,
       0, 0, this.mapWidthTiles, this.mapHeightTiles,
@@ -234,10 +301,11 @@ class Minimap {
    * @param {FogOfWar} fog - Fog-of-war instance
    * @param {number} playerTileX - Player X position in tiles
    * @param {number} playerTileY - Player Y position in tiles
+   * @param {Array} levelGrid - Level grid data for terrain rendering
    */
-  forceUpdate(fog, playerTileX, playerTileY) {
+  forceUpdate(fog, playerTileX, playerTileY, levelGrid) {
     this.lastUpdateTime = 0; // Reset throttle
-    this.update(fog, playerTileX, playerTileY, Date.now());
+    this.update(fog, playerTileX, playerTileY, Date.now(), levelGrid);
   }
 
   /**
