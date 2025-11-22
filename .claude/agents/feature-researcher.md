@@ -22,7 +22,7 @@ When researching for a new feature, you will:
 - Identify areas requiring refactoring or special handling
 
 ### 3. **Create Planning Document**
-Generate a concise research report at `.docs/plans/[feature-name]/[topic-name].docs.md`:
+Generate a concise research report at `/plans/[feature-name]/[topic-name].docs.md`:
 
 ```markdown
 # [Feature/Topic Name] Research
