@@ -1,134 +1,129 @@
 # Minimap Terrain Rendering
 
 ## Overview
-The minimap provides real-time terrain visualization showing actual tile types (stone, dirt, grass, sand) with fog-of-war integration. Players can see explored areas with terrain colors while unexplored areas remain black, and currently visible areas are fully bright.
+The minimap displays colored terrain tiles based on the level grid (stone, dirt, grass, sand) with fog acting as a darkening overlay, providing better spatial awareness during exploration.
 
 ## User Perspective
-The minimap appears in the bottom-right corner (243x162px) showing a scaled-down view of the entire 72x48 tile map. Terrain is color-coded by tile type, with a fog overlay that darkens explored but not-currently-visible areas by 40%. The player's position is marked with a blue circle, and POIs appear as yellow dots when discovered by fog.
+Players see a 243×162px minimap in the bottom-right corner showing:
+- **Terrain colors**: Stone (gray), dirt (brown), grass (green), sand (sandy)
+- **Fog states**: Unexplored (black), explored (dimmed terrain at 40% opacity), visible (full color)
+- **POI markers**: Golden question marks for undiscovered artifacts, green for discovered
+- **Player position**: Blue dot showing current location
 
-As the player explores, the minimap updates every 500ms, revealing new terrain colors as fog clears. The terrain rendering provides spatial awareness for navigation and artifact hunting strategies.
+The minimap updates every 500ms (throttled) and provides real-time visual feedback as players explore the procedurally-generated Roman archeological site.
 
 ## Data Flow
-1. **Level Generation**: `levelGenerator.js` creates grid with tile types → stored in `gameState.level.grid`
-2. **Game Initialization**: Grid passed to minimap via `minimap.update(fog, playerX, playerY, timestamp, levelGrid)`
-3. **Minimap Caching**: Level grid cached in `this.levelGrid` for repeated rendering
-4. **Terrain Rendering** (every 500ms):
-   - Iterate through all 72x48 tiles
-   - Check fog state: UNEXPLORED (0), EXPLORED (1), VISIBLE (2)
-   - For explored/visible tiles: Read tile type from `levelGrid[y][x].type`
-   - Map tile type to RGB color using `terrainColors` dictionary
-   - Write pixels to ImageData buffer (1 pixel per tile at map resolution)
-   - Scale ImageData from 72x48 to minimap resolution (243x162) using canvas drawImage
-5. **Fog Overlay Rendering**:
-   - Create second ImageData buffer with black pixels
-   - Set alpha channel: VISIBLE=0 (transparent), EXPLORED=100 (40% opacity), UNEXPLORED=0 (transparent)
-   - Composite fog overlay on top of terrain layer
-6. **POI/Player Rendering**: Draw markers on final composite
+1. **Level Generation**: `LevelGenerator` creates 72×48 tile grid with terrain types stored in `gameState.level.grid`
+2. **Grid Caching**: Minimap receives grid reference during `update()` calls and caches in `this.levelGrid`
+3. **Terrain Rendering** (Pass 1):
+   - Creates ImageData at map resolution (72×48 pixels, 1 pixel per tile)
+   - For each tile, checks fog state via `fog.getFogState(x, y)`
+   - Explored/visible tiles: looks up tile type from grid, sets RGB color
+   - Unexplored tiles: remains black (RGB 0,0,0)
+   - Renders ImageData to offscreen canvas, scales to 243×162px display
+4. **Fog Overlay** (Pass 2):
+   - Creates second ImageData with black pixels (RGB 0,0,0)
+   - Sets alpha based on fog state: visible=0 (transparent), explored=100 (40% dim), unexplored=0
+   - Composites overlay on top of terrain
+5. **POI/Player Rendering**: Draws markers on top of terrain+fog composite
+6. **Display**: HUD renderer blits final minimap to UI layer at (1177, 778)
 
 ## Implementation
 
 ### Key Files
-- `minimap.js` - Terrain rendering system, fog overlay compositing, ImageData optimization
-- `game.js` - Minimap initialization with size (243x162), grid passing in level loading
-- `hudRenderer.js` - Minimap positioning, update calls with grid parameter
-- `levelGenerator.js` - Tile grid generation with type assignments (stone/dirt/grass/sand)
-- `fogOfWar.js` - Fog state tracking (UNEXPLORED=0, EXPLORED=1, VISIBLE=2)
+- **/home/quigley/dev/2025_STEM_Sparks_Innovation_Project/minimap.js**
+  - Lines 72-78: Terrain color definitions (stone/dirt/grass/sand RGB values)
+  - Line 71: Level grid cache (`this.levelGrid`)
+  - Line 112: `update()` method signature includes `levelGrid` parameter
+  - Lines 142-190: `_renderTerrain()` - ImageData-based terrain rendering
+  - Lines 197-235: `_renderFog()` - Fog overlay with darkening effect
+  - Lines 23-24: Minimap dimensions 243×162px (72×48 tiles × 3.375 scale)
 
-### Terrain Colors
-```javascript
-terrainColors = {
-  'stone': { r: 128, g: 128, b: 128 }, // #808080 gray
-  'dirt':  { r: 139, g: 69,  b: 19 },  // #8B4513 brown
-  'grass': { r: 34,  g: 139, b: 34 },  // #228B22 green
-  'sand':  { r: 244, g: 164, b: 96 }   // #F4A460 tan
-}
-```
+- **/home/quigley/dev/2025_STEM_Sparks_Innovation_Project/game.js**
+  - Line 76: Minimap constructor with new size
+  - Line 458: Level grid stored in gameState
+  - Lines 461-465: POI positions passed to minimap
+  - Line 338: Minimap render called every frame
+
+- **/home/quigley/dev/2025_STEM_Sparks_Innovation_Project/hudRenderer.js**
+  - Lines 47-48: Minimap position for 243×162px size (1177, 778)
+  - Line 114: Passes `gameState.level.grid` to minimap update
+  - Line 348: Passes grid to `forceUpdate()` method
 
 ### Rendering Pipeline
-1. **Terrain Layer** (`_renderTerrain()`):
-   - Creates ImageData at map resolution (72x48)
-   - Sets RGB from terrain color, alpha=255 (fully opaque)
-   - Unexplored tiles remain black (0,0,0,255)
-   - Draws to offscreen `fogCanvas`, then scales to minimap
+Two-pass ImageData approach for performance:
 
-2. **Fog Overlay** (`_renderFog()`):
-   - Creates ImageData at map resolution (72x48)
-   - Black pixels (0,0,0) with variable alpha:
-     - VISIBLE: alpha=0 (terrain shows fully bright)
-     - EXPLORED: alpha=100 (terrain darkened 40%)
-     - UNEXPLORED: alpha=0 (black terrain shows through)
-   - Composites on top of terrain layer
+**Pass 1: Terrain Rendering**
+- Creates 72×48 ImageData (1 pixel per tile)
+- For unexplored tiles: sets black RGB (0,0,0)
+- For explored/visible tiles: looks up tile type from grid, sets terrain color RGB
+- Scales from 72×48px to 243×162px display size
 
-3. **Performance Optimization**:
-   - ImageData API for pixel-level control (faster than rect drawing)
-   - Canvas scaling for smooth downsampling (72x48 → 243x162)
-   - Throttled updates (500ms interval)
-   - Cached level grid reference
+**Pass 2: Fog Overlay**
+- Creates second 72×48 ImageData with black RGB
+- Sets alpha channel: visible=0% (transparent), explored=40%, unexplored=0%
+- Composites overlay on top of terrain layer
 
-### Coordinate Systems
-- Map resolution: 72x48 tiles (1 pixel per tile in ImageData)
-- Minimap resolution: 243x162 pixels (3.375x scale factor)
-- Level grid: `grid[y][x]` row-major indexing
-- Fog state: `fog.getFogState(x, y)` returns 0/1/2
+### Performance Optimizations
+- **ImageData API**: Direct pixel manipulation faster than 3,456 individual rectangle draws
+- **Throttling**: 500ms update intervals via `shouldUpdate()`
+- **Grid Caching**: Level grid reference cached, no per-frame lookups
+- **Scale-after-render**: Renders at 72×48px, scales to 243×162px in single `drawImage()`
+- **Offscreen Canvas**: Terrain/fog rendered offscreen, composited to visible minimap
 
 ## Configuration
-- Minimap display size: 243x162 pixels
-- Update throttle: 500ms between renders
-- Position: Bottom-right corner (20px margins)
-- Fog overlay opacity: 40% for explored areas (alpha=100/255)
-- Map resolution: 72x48 tiles (matches level grid)
+**Terrain Colors** (minimap.js:74-78):
+- Stone: #808080 (128, 128, 128)
+- Dirt: #8B4513 (139, 69, 19)
+- Grass: #228B22 (34, 139, 34)
+- Sand: #F4A460 (244, 164, 96)
+
+**Fog Overlay Opacity** (minimap.js:220):
+- Visible: 0% (fully transparent)
+- Explored: 40% (100/255 alpha)
+- Unexplored: 0% (terrain already black)
+
+**Dimensions** (game.js:76):
+- Display: 243×162 pixels
+- Coverage: 72×48 tiles (full world)
+- Scale: 3.375 pixels per tile
+
+**Update Throttle**: 500ms (minimap.js:88-92)
 
 ## Usage Example
 ```javascript
-// Initialize minimap in Game constructor
+// Initialize minimap
 this.minimap = new Minimap(72, 48, 243, 162);
 
-// Set POI positions after level generation
-const minimapPOIs = level.pois.map(poi => ({
-  x: poi.position.x,
-  y: poi.position.y
-}));
-this.minimap.setPOIs(minimapPOIs);
-
-// Update minimap in HUD renderer (passes level grid)
+// Update each frame (throttled internally)
 const playerTileX = Math.floor(gameState.player.position.x / 40);
 const playerTileY = Math.floor(gameState.player.position.y / 40);
-this.minimap.update(fog, playerTileX, playerTileY, timestamp, gameState.level.grid);
+this.minimap.update(fog, playerTileX, playerTileY, timestamp, level.grid);
 
-// Render minimap to UI canvas
-this.minimap.render(ctx, this.minimapX, this.minimapY);
-
-// Force immediate update (bypasses throttle)
-this.minimap.forceUpdate(fog, playerTileX, playerTileY, gameState.level.grid);
+// Render to UI layer
+this.minimap.render(ctx, minimapX, minimapY);
 ```
 
 ## Testing
-- **Manual Test 1 - Terrain Colors**:
-  1. Start new level, observe minimap bottom-right
-  2. Expected: Black unexplored areas, terrain colors visible around spawn (200px fog radius)
-  3. Verify stone (gray), dirt (brown), grass (green), sand (tan) appear correctly
+**Manual test:**
+1. Start game: `python3 -m http.server 8000`, navigate to http://localhost:8000
+2. Observe minimap shows black unexplored areas
+3. Move player (WASD/arrows) to explore
+4. Verify terrain colors reveal (gray stone, brown dirt, green grass, sandy sand)
+5. Check explored areas show dimmed terrain outside visible radius
+6. Confirm visible areas show full terrain color
+7. Verify POI markers appear when fog reveals them
+8. Test performance: no frame drops during exploration
 
-- **Manual Test 2 - Fog Overlay**:
-  1. Move player to explore new area
-  2. Return to previously explored area (outside 200px radius)
-  3. Expected: Previously explored terrain appears 40% darker than currently visible area
-
-- **Manual Test 3 - POI Markers**:
-  1. Explore to reveal POI
-  2. Check minimap for yellow dot at POI position
-  3. Expected: POI appears on minimap when fog reveals it, matches world position
-
-- **Manual Test 4 - Performance**:
-  1. Open browser console, check FPS (should maintain 60fps)
-  2. Move continuously while watching minimap updates
-  3. Expected: Smooth updates every 500ms, no frame drops
-
-- **Manual Test 5 - Grid Caching**:
-  1. Inspect `window.game.minimap.levelGrid` in console
-  2. Expected: Contains 48 arrays of 72 tiles each with `type` property
+**Expected behavior:**
+- Minimap starts entirely black
+- Terrain reveals in circular pattern around player
+- Explored terrain remains visible but darker
+- POIs appear when fog-revealed
+- Smooth 60fps with no flickering or artifacts
 
 ## Related Documentation
-- Fog System: `fogOfWar.js` (fog state tracking)
-- Level Generation: `levelGenerator.js` (terrain generation with Perlin noise)
-- HUD Rendering: `hudRenderer.js` (minimap positioning and update calls)
-- Performance: Root `CLAUDE.md` (canvas optimization patterns)
+- CLAUDE.md: Canvas layer system, coordinate transforms
+- fogOfWar.js: Fog state management
+- levelGenerator.js: Terrain generation
+- canvasManager.js: Layer orchestration
