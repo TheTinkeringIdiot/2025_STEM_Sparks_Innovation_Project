@@ -108,8 +108,13 @@ class Minimap {
    * @param {number} playerTileY - Player Y position in tiles
    * @param {number} timestamp - Current timestamp for throttling
    * @param {Array} levelGrid - Level grid data for terrain rendering
+   * @param {Array} pois - Current POI array from gameState (optional, uses cached if not provided)
    */
-  update(fog, playerTileX, playerTileY, timestamp, levelGrid) {
+  update(fog, playerTileX, playerTileY, timestamp, levelGrid, pois) {
+    // Update POIs if provided (for real-time POI removal tracking)
+    if (pois !== undefined) {
+      this.pois = pois;
+    }
     // Throttle updates to 500ms interval
     if (!this.shouldUpdate(timestamp)) {
       return;
@@ -244,15 +249,19 @@ class Minimap {
     const ctx = this.minimapCtx;
 
     for (const poi of this.pois) {
+      // Support both {x, y} and {position: {x, y}} formats
+      const poiX = poi.position ? poi.position.x : poi.x;
+      const poiY = poi.position ? poi.position.y : poi.y;
+
       // Only render POI if it has been explored
-      const fogState = fog.getFogState(poi.x, poi.y);
+      const fogState = fog.getFogState(poiX, poiY);
       if (fogState === 0) { // UNEXPLORED
         continue;
       }
 
       // Convert tile coordinates to minimap pixel coordinates (round for performance)
-      const minimapX = Math.round(poi.x * this.scale) + this.offsetX;
-      const minimapY = Math.round(poi.y * this.scale) + this.offsetY;
+      const minimapX = Math.round(poiX * this.scale) + this.offsetX;
+      const minimapY = Math.round(poiY * this.scale) + this.offsetY;
 
       // Draw POI marker as small colored dot (2x2 pixels)
       ctx.fillStyle = '#FFD700'; // Gold color for POIs

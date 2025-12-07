@@ -33,15 +33,15 @@ class HUDRenderer {
       'hammer_chisel'
     ];
 
-    // Tool inventory bar dimensions
+    // Tool bar dimensions
     this.slotSize = 48; // Each slot is 48x48 pixels
     this.slotPadding = 4; // Padding between slots
-    this.inventoryBarWidth = this.toolSlots.length * (this.slotSize + this.slotPadding) - this.slotPadding;
-    this.inventoryBarHeight = this.slotSize;
+    this.toolBarWidth = this.toolSlots.length * (this.slotSize + this.slotPadding) - this.slotPadding;
+    this.toolBarHeight = this.slotSize;
 
-    // Position inventory bar at bottom-center (round coordinates for performance)
-    this.inventoryBarX = Math.round((viewportWidth - this.inventoryBarWidth) / 2);
-    this.inventoryBarY = Math.round(viewportHeight - this.inventoryBarHeight - 20);
+    // Position tool bar at bottom-center (round coordinates for performance)
+    this.toolBarX = Math.round((viewportWidth - this.toolBarWidth) / 2);
+    this.toolBarY = Math.round(viewportHeight - this.toolBarHeight - 20);
 
     // Minimap position (bottom-right, round coordinates for performance)
     this.minimapX = Math.round(viewportWidth - 243 - 20);
@@ -55,7 +55,7 @@ class HUDRenderer {
     this.cachedState = {
       money: -1,
       currentTool: null,
-      unlockedTools: [],
+      tools: [],
       levelNumber: -1
     };
 
@@ -73,12 +73,12 @@ class HUDRenderer {
     const toolChanged = this.cachedState.currentTool !== gameState.player.currentTool;
     const levelChanged = this.cachedState.levelNumber !== gameState.level.number;
 
-    // Check if unlocked tools changed
-    const unlockedToolsChanged =
-      JSON.stringify(this.cachedState.unlockedTools) !==
-      JSON.stringify(gameState.player.inventory);
+    // Check if tools changed
+    const toolsChanged =
+      JSON.stringify(this.cachedState.tools) !==
+      JSON.stringify(gameState.player.tools);
 
-    return moneyChanged || toolChanged || levelChanged || unlockedToolsChanged;
+    return moneyChanged || toolChanged || levelChanged || toolsChanged;
   }
 
   /**
@@ -89,7 +89,7 @@ class HUDRenderer {
     this.cachedState.money = gameState.player.money;
     this.cachedState.currentTool = gameState.player.currentTool;
     this.cachedState.levelNumber = gameState.level.number;
-    this.cachedState.unlockedTools = [...gameState.player.inventory];
+    this.cachedState.tools = [...gameState.player.tools];
   }
 
   /**
@@ -105,13 +105,13 @@ class HUDRenderer {
     this.renderMoney(ctx, gameState.player.money);
 
     // Render tool inventory bar (bottom-center)
-    this.renderInventoryBar(ctx, gameState.player.inventory, gameState.player.currentTool);
+    this.renderToolBar(ctx, gameState.player.tools, gameState.player.currentTool);
 
     // Render minimap (bottom-right)
     if (gameState.player.position) {
       const playerTileX = Math.floor(gameState.player.position.x / 40);
       const playerTileY = Math.floor(gameState.player.position.y / 40);
-      this.minimap.update(fog, playerTileX, playerTileY, timestamp, gameState.level.grid);
+      this.minimap.update(fog, playerTileX, playerTileY, timestamp, gameState.level.grid, gameState.level.pois);
     }
     this.minimap.render(ctx, this.minimapX, this.minimapY);
 
@@ -146,30 +146,30 @@ class HUDRenderer {
   }
 
   /**
-   * Renders tool inventory bar at bottom-center
+   * Renders tool bar at bottom-center
    * @param {CanvasRenderingContext2D} ctx - UI layer canvas context
-   * @param {Array<string>} unlockedTools - Array of unlocked tool IDs
+   * @param {Array<string>} tools - Array of unlocked tool IDs
    * @param {string} currentTool - Currently selected tool ID
    */
-  renderInventoryBar(ctx, unlockedTools, currentTool) {
+  renderToolBar(ctx, tools, currentTool) {
     // Background panel (round coordinates for performance)
-    const panelX = Math.round(this.inventoryBarX - 8);
-    const panelY = Math.round(this.inventoryBarY - 8);
+    const panelX = Math.round(this.toolBarX - 8);
+    const panelY = Math.round(this.toolBarY - 8);
 
     ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
     ctx.fillRect(
       panelX,
       panelY,
-      this.inventoryBarWidth + 16,
-      this.inventoryBarHeight + 16
+      this.toolBarWidth + 16,
+      this.toolBarHeight + 16
     );
 
     // Render each tool slot
     for (let i = 0; i < this.toolSlots.length; i++) {
       const toolId = this.toolSlots[i];
-      const slotX = Math.round(this.inventoryBarX + i * (this.slotSize + this.slotPadding));
-      const slotY = Math.round(this.inventoryBarY);
-      const isUnlocked = unlockedTools.includes(toolId);
+      const slotX = Math.round(this.toolBarX + i * (this.slotSize + this.slotPadding));
+      const slotY = Math.round(this.toolBarY);
+      const isUnlocked = tools.includes(toolId);
       const isSelected = currentTool === toolId;
 
       this.renderToolSlot(ctx, slotX, slotY, toolId, isUnlocked, isSelected);
@@ -257,26 +257,26 @@ class HUDRenderer {
   }
 
   /**
-   * Handles mouse click for tool selection in inventory bar
-   * Returns selected tool ID if click was in inventory bar, null otherwise
+   * Handles mouse click for tool selection in tool bar
+   * Returns selected tool ID if click was in tool bar, null otherwise
    * @param {number} mouseX - Mouse X position in canvas coordinates
    * @param {number} mouseY - Mouse Y position in canvas coordinates
-   * @param {Array<string>} unlockedTools - Array of unlocked tool IDs
+   * @param {Array<string>} tools - Array of unlocked tool IDs
    * @returns {string|null} Selected tool ID or null
    */
-  handleInventoryClick(mouseX, mouseY, unlockedTools) {
-    // Check if click is within inventory bar bounds
+  handleToolBarClick(mouseX, mouseY, tools) {
+    // Check if click is within tool bar bounds
     if (
-      mouseX < this.inventoryBarX ||
-      mouseX > this.inventoryBarX + this.inventoryBarWidth ||
-      mouseY < this.inventoryBarY ||
-      mouseY > this.inventoryBarY + this.inventoryBarHeight
+      mouseX < this.toolBarX ||
+      mouseX > this.toolBarX + this.toolBarWidth ||
+      mouseY < this.toolBarY ||
+      mouseY > this.toolBarY + this.toolBarHeight
     ) {
-      return null; // Click outside inventory bar
+      return null; // Click outside tool bar
     }
 
     // Determine which slot was clicked
-    const relativeX = mouseX - this.inventoryBarX;
+    const relativeX = mouseX - this.toolBarX;
     const slotIndex = Math.floor(relativeX / (this.slotSize + this.slotPadding));
 
     if (slotIndex < 0 || slotIndex >= this.toolSlots.length) {
@@ -286,7 +286,7 @@ class HUDRenderer {
     const toolId = this.toolSlots[slotIndex];
 
     // Only allow selection of unlocked tools
-    if (!unlockedTools.includes(toolId)) {
+    if (!tools.includes(toolId)) {
       return null; // Tool not unlocked
     }
 
@@ -311,10 +311,10 @@ class HUDRenderer {
     if (!this.clickHandled) {
       this.clickHandled = true;
 
-      const selectedTool = this.handleInventoryClick(
+      const selectedTool = this.handleToolBarClick(
         inputState.mouse.x,
         inputState.mouse.y,
-        gameState.player.inventory
+        gameState.player.tools
       );
 
       if (selectedTool) {
@@ -353,15 +353,15 @@ class HUDRenderer {
   }
 
   /**
-   * Gets inventory bar bounds for hit testing
+   * Gets tool bar bounds for hit testing
    * @returns {Object} Bounds object with x, y, width, height
    */
-  getInventoryBarBounds() {
+  getToolBarBounds() {
     return {
-      x: this.inventoryBarX,
-      y: this.inventoryBarY,
-      width: this.inventoryBarWidth,
-      height: this.inventoryBarHeight
+      x: this.toolBarX,
+      y: this.toolBarY,
+      width: this.toolBarWidth,
+      height: this.toolBarHeight
     };
   }
 
@@ -372,7 +372,7 @@ class HUDRenderer {
     this.cachedState = {
       money: -1,
       currentTool: null,
-      unlockedTools: [],
+      tools: [],
       levelNumber: -1
     };
     this.clickHandled = false;
