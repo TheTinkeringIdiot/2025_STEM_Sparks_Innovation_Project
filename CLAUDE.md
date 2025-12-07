@@ -151,7 +151,8 @@ Since this is vanilla JS without TypeScript, document expected shapes in comment
 {
   position: { x: number, y: number },
   money: number,
-  inventory: string[],
+  tools: string[], // Tool IDs: ['stadia_rod', 'magnifying_glass', 'shovel', ...]
+  artifacts: string[], // Collected artifact IDs: ['amphora', 'denarius_coin', ...]
   currentTool: string,
   direction: 'up'|'down'|'left'|'right'
 }
