@@ -37,6 +37,11 @@ class Game {
     this.flashEffect = null;
     this.confettiSystem = null;
     this.toolSystem = null;
+    this.artifactInventory = null;
+    this.museum = null;
+
+    // Level completion state
+    this.isLevelComplete = false;
 
     // Player movement constants
     this.playerSpeed = 160; // pixels per second (4 tiles per second at 40px/tile)
@@ -93,6 +98,14 @@ class Game {
       this.flashEffect,
       this.confettiSystem
     );
+
+    // Initialize artifact inventory UI
+    this.artifactInventory = new ArtifactInventory(1440, 960);
+    this.artifactInventory.attachWheelListener(uiLayer.canvas);
+
+    // Initialize museum
+    this.museum = new Museum();
+    this.museum.initialize(this.gameState, () => this.onContinueToNextLevel());
 
     console.log('Game systems initialized');
 
@@ -174,6 +187,17 @@ class Game {
     // Get current input state
     const input = this.inputManager.getState();
 
+    // Process artifact inventory toggle (I key)
+    const inventoryToggled = this.artifactInventory.processInput(input);
+    if (inventoryToggled) {
+      this.canvasManager.markDirty('ui');
+    }
+
+    // Block other input when inventory is open or level is complete
+    if (this.artifactInventory.isVisible() || this.isLevelComplete) {
+      return; // Skip movement, tool use, etc.
+    }
+
     // Process HUD input for tool selection
     const toolChanged = this.hudRenderer.processInput(input, this.gameState);
     if (toolChanged) {
@@ -197,6 +221,9 @@ class Game {
     // Update tool system
     this.toolSystem.update(deltaTime);
 
+    // Check for level completion (all POIs excavated)
+    this.checkLevelComplete();
+
     // Update visual effects
     this.flashEffect.update(deltaTime);
     this.confettiSystem.update(deltaTime);
@@ -214,11 +241,14 @@ class Game {
     // Check if camera moved
     const cameraMoved = (prevCameraX !== this.camera.worldX || prevCameraY !== this.camera.worldY);
 
-    // Update fog of war based on player position
-    const fogUpdated = this.fogOfWar.updateFog(
-      this.gameState.player.position.x,
-      this.gameState.player.position.y
-    );
+    // Update fog of war based on player position (only when stadia rod is equipped)
+    let fogUpdated = false;
+    if (this.gameState.player.currentTool === 'stadia_rod') {
+      fogUpdated = this.fogOfWar.updateFog(
+        this.gameState.player.position.x,
+        this.gameState.player.position.y
+      );
+    }
 
     // Mark layers as dirty when camera moves or fog updates
     if (cameraMoved) {
@@ -426,6 +456,9 @@ class Game {
 
     // Render tool hint text
     this.toolSystem.renderHint(ctx, 1440, 960);
+
+    // Render artifact inventory (if open)
+    this.artifactInventory.render(ctx, this.gameState.player.artifacts);
   }
 
   /**
@@ -434,6 +467,9 @@ class Game {
    */
   loadLevel(levelNumber) {
     console.log(`Loading level ${levelNumber}...`);
+
+    // Reset level completion state
+    this.isLevelComplete = false;
 
     // 1. Generate level using LevelGenerator
     const levelConfig = {
@@ -457,8 +493,8 @@ class Game {
     this.gameState.level.obstacles = level.obstacles || [];
     this.gameState.level.grid = level.grid;
 
-    // Update inventory for level
-    updateInventoryForLevel(this.gameState, levelNumber);
+    // Update tools for level
+    updateToolsForLevel(this.gameState, levelNumber);
 
     // Update minimap with POI positions
     const minimapPOIs = level.pois.map(poi => ({
@@ -504,6 +540,56 @@ class Game {
   }
 
   /**
+   * Check if level is complete (all POIs excavated)
+   * @returns {boolean} True if level is complete
+   */
+  checkLevelComplete() {
+    if (this.isLevelComplete) {
+      return true; // Already completed
+    }
+
+    // Level is complete when all POIs have been excavated
+    if (this.gameState.level.pois.length === 0) {
+      this.isLevelComplete = true;
+      this.onLevelComplete();
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Handle level completion
+   * Shows museum screen with collected artifacts
+   */
+  onLevelComplete() {
+    console.log('Level complete! Showing museum...');
+
+    // Get collected artifacts from player
+    const collectedArtifacts = this.gameState.player.artifacts || [];
+
+    // Show museum with collected artifacts
+    this.museum.show(collectedArtifacts);
+  }
+
+  /**
+   * Callback when player continues from museum to next level
+   */
+  onContinueToNextLevel() {
+    console.log('Continuing to next level...');
+
+    // Clear collected artifacts for next level
+    this.gameState.player.artifacts = [];
+
+    // Reset level completion state
+    this.isLevelComplete = false;
+
+    // Load next level (cap at level 10)
+    const nextLevel = Math.min(this.gameState.level.number + 1, 10);
+    this.loadLevel(nextLevel);
+  }
+
+  /**
    * Cleanup and destroy game instance
    */
   destroy() {
@@ -511,6 +597,10 @@ class Game {
 
     if (this.inputManager) {
       this.inputManager.destroy();
+    }
+
+    if (this.museum) {
+      this.museum.destroy();
     }
 
     console.log('Game destroyed');

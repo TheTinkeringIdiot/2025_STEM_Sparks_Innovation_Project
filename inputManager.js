@@ -22,7 +22,8 @@ class InputManager {
         down: false,
         left: false,
         right: false,
-        space: false
+        space: false,
+        i: false
       },
       mouse: {
         x: 0,
@@ -85,6 +86,9 @@ class InputManager {
         this.state.keys.space = true;
         event.preventDefault();
         break;
+      case 'i':
+        this.state.keys.i = true;
+        break;
     }
   }
 
@@ -118,6 +122,9 @@ class InputManager {
         break;
       case ' ':
         this.state.keys.space = false;
+        break;
+      case 'i':
+        this.state.keys.i = false;
         break;
     }
   }

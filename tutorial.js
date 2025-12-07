@@ -42,6 +42,14 @@ const TUTORIAL_STEPS = [
   {
     step: 4,
     text: 'Available tools: ROD (mapping), MAG (hints), SHV (shovel) for excavation'
+  },
+  {
+    step: 5,
+    text: 'Stand near a POI and press SPACEBAR to use your selected tool'
+  },
+  {
+    step: 6,
+    text: 'Press I to open your artifact inventory and view collected items'
   }
 ];
 
