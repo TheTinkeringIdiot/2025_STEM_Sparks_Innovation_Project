@@ -158,7 +158,8 @@ function createDefaultGameState() {
     player: {
       position: { x: 0, y: 0 },
       money: 100,
-      inventory: ['stadia_rod', 'magnifying_glass'],
+      tools: ['stadia_rod', 'magnifying_glass'],
+      artifacts: [],
       currentTool: 'stadia_rod',
       direction: 'down'
     },
@@ -185,12 +186,12 @@ function getAvailableTools(levelNumber) {
   return TOOL_UNLOCKS[levelNumber] || TOOL_UNLOCKS[1];
 }
 
-// Update player inventory based on level progression
-function updateInventoryForLevel(gameState, levelNumber) {
-  gameState.player.inventory = getAvailableTools(levelNumber);
+// Update player tools based on level progression
+function updateToolsForLevel(gameState, levelNumber) {
+  gameState.player.tools = getAvailableTools(levelNumber);
 
-  // Ensure current tool is in inventory, default to stadia_rod if not
-  if (!gameState.player.inventory.includes(gameState.player.currentTool)) {
+  // Ensure current tool is in tools, default to stadia_rod if not
+  if (!gameState.player.tools.includes(gameState.player.currentTool)) {
     gameState.player.currentTool = 'stadia_rod';
   }
 }
@@ -306,8 +307,8 @@ function loadGameState() {
     // Restore museum collection
     gameState.museum.collection = parsed.museum.collection || [];
 
-    // Update inventory based on current level
-    updateInventoryForLevel(gameState, gameState.level.number);
+    // Update tools based on current level
+    updateToolsForLevel(gameState, gameState.level.number);
 
     return gameState;
   } catch (error) {

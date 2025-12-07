@@ -71,7 +71,9 @@ class ToolSystem {
       if (elapsed >= this.TOOL_ANIMATION_DURATION) {
         this.isAnimating = false;
         // Return to idle state after animation
-        this.animator.setState('idle', this.gameState.player.direction);
+        if (this.animator) {
+          this.animator.setState('idle', this.gameState.player.direction);
+        }
       }
     }
 
@@ -190,7 +192,9 @@ class ToolSystem {
 
     this.isAnimating = true;
     this.animationStartTime = performance.now();
-    this.animator.setState(animationState, this.gameState.player.direction);
+    if (this.animator) {
+      this.animator.setState(animationState, this.gameState.player.direction);
+    }
   }
 
   /**
@@ -224,11 +228,11 @@ class ToolSystem {
     const worldY = poi.position.y * 40 + 20;
     this.confettiSystem.emit(worldX, worldY, 40);
 
-    // Add artifact to player inventory
-    if (!this.gameState.player.inventory) {
-      this.gameState.player.inventory = [];
+    // Add artifact to player artifacts collection
+    if (!this.gameState.player.artifacts) {
+      this.gameState.player.artifacts = [];
     }
-    this.gameState.player.inventory.push(artifact.id);
+    this.gameState.player.artifacts.push(artifact.id);
 
     // Remove POI from level
     this.removePOI(poi);

@@ -97,7 +97,7 @@ class Museum {
 
   /**
    * Render museum content
-   * Shows collected artifacts (icons only) and donated artifacts (with details)
+   * Shows collected artifacts with funding summary
    * @private
    */
   render() {
@@ -106,93 +106,145 @@ class Museum {
     // Clear existing content
     this.container.innerHTML = '';
 
+    // Calculate funding from collected artifacts
+    let totalFunding = 0;
+    this.tempInventoryArtifacts.forEach(artifactId => {
+      const artifact = getArtifact(artifactId);
+      if (artifact) {
+        totalFunding += artifact.value;
+      }
+    });
+
     // Title
     const title = document.createElement('h1');
-    title.textContent = 'Museum';
-    title.style.cssText = 'margin-bottom: 30px; font-size: 48px;';
+    title.textContent = 'Level Complete!';
+    title.style.cssText = `
+      margin-bottom: 10px;
+      font-size: 48px;
+      font-family: Georgia, serif;
+      color: #f4e4c1;
+    `;
     this.container.appendChild(title);
+
+    // Subtitle
+    const subtitle = document.createElement('h2');
+    subtitle.textContent = 'Artifacts Donated to Museum';
+    subtitle.style.cssText = `
+      margin-bottom: 30px;
+      font-size: 24px;
+      color: #a0a0a0;
+      font-weight: normal;
+    `;
+    this.container.appendChild(subtitle);
 
     // Main content container
     const content = document.createElement('div');
-    content.style.cssText = 'max-width: 1200px; width: 90%;';
+    content.style.cssText = 'max-width: 900px; width: 90%;';
     this.container.appendChild(content);
 
-    // Section 1: Collected Artifacts (not yet donated)
+    // Artifacts collected section
     if (this.tempInventoryArtifacts.length > 0) {
-      const collectedSection = document.createElement('div');
-      collectedSection.style.cssText = 'margin-bottom: 40px;';
-
-      const collectedTitle = document.createElement('h2');
-      collectedTitle.textContent = 'Artifacts Collected This Level';
-      collectedTitle.style.cssText = 'margin-bottom: 20px; font-size: 28px; color: #FFD700;';
-      collectedSection.appendChild(collectedTitle);
-
-      const collectedGrid = this.createArtifactGrid(this.tempInventoryArtifacts, false);
-      collectedSection.appendChild(collectedGrid);
-
-      // Donate All button
-      const donateButton = document.createElement('button');
-      donateButton.textContent = 'Donate All';
-      donateButton.style.cssText = `
-        margin-top: 20px;
-        padding: 15px 40px;
-        font-size: 24px;
-        background: #4CAF50;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: background 0.3s;
-      `;
-      donateButton.onmouseover = () => donateButton.style.background = '#45a049';
-      donateButton.onmouseout = () => donateButton.style.background = '#4CAF50';
-      donateButton.onclick = () => this.donateAllArtifacts();
-      collectedSection.appendChild(donateButton);
-
-      content.appendChild(collectedSection);
-    }
-
-    // Section 2: Museum Collection (donated artifacts)
-    const museumSection = document.createElement('div');
-    museumSection.style.cssText = 'margin-bottom: 40px;';
-
-    const museumTitle = document.createElement('h2');
-    museumTitle.textContent = 'Museum Collection';
-    museumTitle.style.cssText = 'margin-bottom: 20px; font-size: 28px; color: #87CEEB;';
-    museumSection.appendChild(museumTitle);
-
-    if (this.gameState.museum.collection.length > 0) {
-      const museumGrid = this.createArtifactGrid(this.gameState.museum.collection, true);
-      museumSection.appendChild(museumGrid);
+      const collectedGrid = this.createArtifactGrid(this.tempInventoryArtifacts, true);
+      content.appendChild(collectedGrid);
     } else {
       const emptyMessage = document.createElement('p');
-      emptyMessage.textContent = 'No artifacts donated yet. Donate artifacts to see them in your collection!';
-      emptyMessage.style.cssText = 'color: #888; font-size: 18px;';
-      museumSection.appendChild(emptyMessage);
+      emptyMessage.textContent = 'No artifacts were collected this level.';
+      emptyMessage.style.cssText = 'color: #888; font-size: 20px; text-align: center; margin: 40px 0;';
+      content.appendChild(emptyMessage);
     }
 
-    content.appendChild(museumSection);
+    // Funding summary
+    const fundingSection = document.createElement('div');
+    fundingSection.style.cssText = `
+      margin-top: 30px;
+      padding: 20px 30px;
+      background: rgba(255, 215, 0, 0.1);
+      border: 2px solid #FFD700;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    `;
 
-    // Continue to Next Level button (only show after donation or if no artifacts collected)
-    if (this.tempInventoryArtifacts.length === 0) {
-      const continueButton = document.createElement('button');
-      continueButton.textContent = 'Continue to Next Level';
-      continueButton.style.cssText = `
-        margin-top: 30px;
-        padding: 15px 40px;
-        font-size: 24px;
-        background: #2196F3;
-        color: white;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: background 0.3s;
-      `;
-      continueButton.onmouseover = () => continueButton.style.background = '#1976D2';
-      continueButton.onmouseout = () => continueButton.style.background = '#2196F3';
-      continueButton.onclick = () => this.continueToNextLevel();
-      content.appendChild(continueButton);
-    }
+    const fundingLabel = document.createElement('div');
+    fundingLabel.innerHTML = `
+      <div style="font-size: 18px; color: #a0a0a0;">Museum Funding Received</div>
+      <div style="font-size: 14px; color: #666; margin-top: 5px;">${this.tempInventoryArtifacts.length} artifact${this.tempInventoryArtifacts.length !== 1 ? 's' : ''} donated</div>
+    `;
+    fundingSection.appendChild(fundingLabel);
+
+    const fundingAmount = document.createElement('div');
+    fundingAmount.textContent = `+$${totalFunding}`;
+    fundingAmount.style.cssText = `
+      font-size: 36px;
+      font-weight: bold;
+      color: #FFD700;
+      font-family: monospace;
+    `;
+    fundingSection.appendChild(fundingAmount);
+
+    content.appendChild(fundingSection);
+
+    // Continue button
+    const continueButton = document.createElement('button');
+    continueButton.textContent = 'Continue to Next Level';
+    continueButton.style.cssText = `
+      margin-top: 30px;
+      padding: 18px 50px;
+      font-size: 24px;
+      background: #8b6f47;
+      color: #f4e4c1;
+      border: 3px solid #f4e4c1;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: Georgia, serif;
+    `;
+    continueButton.onmouseover = () => {
+      continueButton.style.background = '#a68a5a';
+      continueButton.style.transform = 'translateY(-2px)';
+    };
+    continueButton.onmouseout = () => {
+      continueButton.style.background = '#8b6f47';
+      continueButton.style.transform = 'translateY(0)';
+    };
+    continueButton.onclick = () => this.donateAndContinue();
+    content.appendChild(continueButton);
+  }
+
+  /**
+   * Donate artifacts and continue to next level
+   * Adds funding to player wallet and proceeds
+   * @private
+   */
+  donateAndContinue() {
+    // Calculate and add funding to player wallet
+    let totalFunding = 0;
+    this.tempInventoryArtifacts.forEach(artifactId => {
+      const artifact = getArtifact(artifactId);
+      if (artifact) {
+        totalFunding += artifact.value;
+
+        // Add to museum collection (avoid duplicates)
+        if (!this.gameState.museum.collection.includes(artifactId)) {
+          this.gameState.museum.collection.push(artifactId);
+        }
+      }
+    });
+
+    // Add funding to player wallet
+    this.gameState.player.money += totalFunding;
+
+    // Clear temporary artifacts
+    this.tempInventoryArtifacts = [];
+
+    // Save game state
+    saveGameState(this.gameState);
+
+    console.log(`Museum funding: +$${totalFunding}. Total wallet: $${this.gameState.player.money}`);
+
+    // Continue to next level
+    this.continueToNextLevel();
   }
 
   /**
@@ -326,52 +378,6 @@ class Museum {
     };
 
     return emojiMap[artifact.id] || '❓';
-  }
-
-  /**
-   * Donate all collected artifacts to museum
-   * Transfers artifacts from temp inventory to permanent collection
-   * Awards money based on artifact values
-   * @private
-   */
-  donateAllArtifacts() {
-    if (this.tempInventoryArtifacts.length === 0) return;
-
-    let totalMoney = 0;
-
-    // Process each artifact
-    this.tempInventoryArtifacts.forEach(artifactId => {
-      const artifact = getArtifact(artifactId);
-      if (!artifact) return;
-
-      // Add to museum collection (avoid duplicates for display purposes)
-      if (!this.gameState.museum.collection.includes(artifactId)) {
-        this.gameState.museum.collection.push(artifactId);
-      }
-
-      // Calculate money
-      if (artifact.isJunk) {
-        // Junk items have fixed values in the catalog (0-10)
-        totalMoney += artifact.value;
-      } else {
-        // Valuable artifacts worth $100
-        totalMoney += 100;
-      }
-    });
-
-    // Add money to player
-    this.gameState.player.money += totalMoney;
-
-    // Clear temporary inventory
-    this.tempInventoryArtifacts = [];
-
-    // Save game state after donation
-    saveGameState(this.gameState);
-
-    // Re-render museum to show updated state
-    this.render();
-
-    console.log(`Donated artifacts for $${totalMoney}. Total money: $${this.gameState.player.money}`);
   }
 
   /**
