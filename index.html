@@ -7,13 +7,16 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div id="game-container">
-        <!-- Multi-layer canvas setup for archeology game -->
-        <!-- Layer order: background (0) -> entities (1) -> fog (2) -> ui (3) -->
-        <canvas id="background-canvas" width="1440" height="960"></canvas>
-        <canvas id="entities-canvas" width="1440" height="960"></canvas>
-        <canvas id="fog-canvas" width="1440" height="960"></canvas>
-        <canvas id="ui-canvas" width="1440" height="960"></canvas>
+    <div id="game-wrapper">
+        <!-- Tool sidebar will be injected here by toolSidebar.js -->
+        <div id="game-container">
+            <!-- Multi-layer canvas setup for archeology game -->
+            <!-- Layer order: background (0) -> entities (1) -> fog (2) -> ui (3) -->
+            <canvas id="background-canvas" width="1440" height="960"></canvas>
+            <canvas id="entities-canvas" width="1440" height="960"></canvas>
+            <canvas id="fog-canvas" width="1440" height="960"></canvas>
+            <canvas id="ui-canvas" width="1440" height="960"></canvas>
+        </div>
     </div>
 
     <!-- Game Module Scripts - Load in dependency order -->
@@ -33,6 +36,8 @@
     <script src="fogRenderer.js"></script>
     <script src="minimap.js"></script>
     <script src="hudRenderer.js"></script>
+    <script src="toolSidebar.js"></script>
+    <script src="artifactSidebar.js"></script>
     <script src="artifactInventory.js"></script>
 
     <!-- Animation and effects -->

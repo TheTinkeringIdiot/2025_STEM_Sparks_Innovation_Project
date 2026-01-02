@@ -15,6 +15,325 @@ body {
     overflow: hidden;
 }
 
+/* Game Wrapper - Contains sidebar and game */
+#game-wrapper {
+    display: flex;
+    flex-direction: row;
+    gap: 0;
+}
+
+/* Tool Sidebar */
+#tool-sidebar {
+    width: 280px;
+    height: 960px;
+    background: linear-gradient(180deg, #2a2520 0%, #1a1815 100%);
+    border: 2px solid #5a4a35;
+    border-right: none;
+    box-shadow: -5px 0 15px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.sidebar-header {
+    background: linear-gradient(180deg, #3a3025 0%, #2a2520 100%);
+    padding: 16px;
+    border-bottom: 2px solid #5a4a35;
+    text-align: center;
+}
+
+.sidebar-header h2 {
+    color: #d4a84b;
+    font-size: 18px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin: 0;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.sidebar-content {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #5a4a35 #1a1815;
+}
+
+.sidebar-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.sidebar-content::-webkit-scrollbar-track {
+    background: #1a1815;
+}
+
+.sidebar-content::-webkit-scrollbar-thumb {
+    background: #5a4a35;
+    border-radius: 4px;
+}
+
+.tool-placeholder {
+    text-align: center;
+    padding: 40px 20px;
+    color: #8a8070;
+    font-style: italic;
+}
+
+.tool-info {
+    color: #e0d5c5;
+}
+
+.tool-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #5a4a35;
+}
+
+.tool-icon {
+    font-size: 32px;
+    filter: drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.5));
+}
+
+.tool-header h3 {
+    color: #d4a84b;
+    font-size: 20px;
+    margin: 0;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.tool-description {
+    font-size: 13px;
+    line-height: 1.5;
+    color: #c0b5a5;
+    margin-bottom: 16px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    border-left: 3px solid #5a4a35;
+}
+
+.info-section {
+    margin-bottom: 16px;
+}
+
+.info-section h4 {
+    color: #b8956e;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px dashed #4a3a25;
+}
+
+.info-section p {
+    font-size: 12px;
+    line-height: 1.6;
+    color: #a09585;
+}
+
+.benefits-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.benefits-list li {
+    font-size: 12px;
+    color: #a09585;
+    padding: 6px 0 6px 20px;
+    position: relative;
+    line-height: 1.4;
+}
+
+.benefits-list li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: #7a9a5a;
+    font-weight: bold;
+}
+
+.info-section.historical {
+    background: rgba(90, 74, 53, 0.2);
+    padding: 12px;
+    border-radius: 4px;
+    margin-top: 20px;
+}
+
+.info-section.historical h4 {
+    color: #c4a06e;
+    border-bottom-color: #6a5a45;
+}
+
+.info-section.historical p {
+    font-style: italic;
+    color: #b0a595;
+}
+
+/* Artifact Sidebar (Right) */
+#artifact-sidebar {
+    width: 280px;
+    height: 960px;
+    background: linear-gradient(180deg, #1a2025 0%, #151a1f 100%);
+    border: 2px solid #3a5a6a;
+    border-left: none;
+    box-shadow: 5px 0 15px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: box-shadow 0.3s ease;
+}
+
+#artifact-sidebar.artifact-discovered {
+    box-shadow: 5px 0 25px rgba(255, 215, 0, 0.4), inset 0 0 30px rgba(255, 215, 0, 0.1);
+    animation: discovery-pulse 0.6s ease-out;
+}
+
+@keyframes discovery-pulse {
+    0% { border-color: #FFD700; }
+    50% { border-color: #FFD700; }
+    100% { border-color: #3a5a6a; }
+}
+
+#artifact-sidebar .sidebar-header {
+    background: linear-gradient(180deg, #253035 0%, #1a2025 100%);
+    border-bottom: 2px solid #3a5a6a;
+}
+
+#artifact-sidebar .sidebar-header h2 {
+    color: #6ab4d4;
+}
+
+#artifact-sidebar .sidebar-content {
+    flex: 1;
+    padding: 16px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #3a5a6a #151a1f;
+}
+
+#artifact-sidebar .sidebar-content::-webkit-scrollbar {
+    width: 8px;
+}
+
+#artifact-sidebar .sidebar-content::-webkit-scrollbar-track {
+    background: #151a1f;
+}
+
+#artifact-sidebar .sidebar-content::-webkit-scrollbar-thumb {
+    background: #3a5a6a;
+    border-radius: 4px;
+}
+
+.artifact-placeholder {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6a8090;
+    font-style: italic;
+}
+
+.artifact-info {
+    color: #d5e0e5;
+}
+
+.artifact-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #3a5a6a;
+}
+
+.artifact-icon {
+    font-size: 40px;
+    filter: drop-shadow(2px 2px 2px rgba(0, 0, 0, 0.5));
+}
+
+.artifact-title {
+    flex: 1;
+}
+
+.artifact-title h3 {
+    color: #6ab4d4;
+    font-size: 18px;
+    margin: 0 0 4px 0;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.artifact-period {
+    font-size: 11px;
+    color: #7a9aa5;
+    font-style: italic;
+}
+
+.artifact-origin {
+    font-size: 11px;
+    color: #8aaab5;
+    margin-bottom: 12px;
+    padding: 6px 10px;
+    background: rgba(58, 90, 106, 0.2);
+    border-radius: 4px;
+}
+
+.artifact-origin strong {
+    color: #6ab4d4;
+}
+
+.artifact-description {
+    font-size: 12px;
+    line-height: 1.5;
+    color: #b5c5ca;
+    margin-bottom: 14px;
+    padding: 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    border-left: 3px solid #3a5a6a;
+}
+
+#artifact-sidebar .info-section {
+    margin-bottom: 14px;
+}
+
+#artifact-sidebar .info-section h4 {
+    color: #5a9ab0;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+    padding-bottom: 4px;
+    border-bottom: 1px dashed #2a4a5a;
+}
+
+#artifact-sidebar .info-section p {
+    font-size: 11px;
+    line-height: 1.5;
+    color: #95a5aa;
+}
+
+.info-section.fun-fact {
+    background: rgba(106, 180, 212, 0.1);
+    padding: 12px;
+    border-radius: 4px;
+    margin-top: 16px;
+    border: 1px dashed #3a6a7a;
+}
+
+.info-section.fun-fact h4 {
+    color: #7ac4e4;
+    border-bottom-color: #4a7a8a;
+}
+
+.info-section.fun-fact p {
+    font-style: italic;
+    color: #a5c5ca;
+}
+
 /* Game Container */
 #game-container {
     position: relative;

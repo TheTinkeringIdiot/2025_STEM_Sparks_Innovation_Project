@@ -39,6 +39,8 @@ class Game {
     this.toolSystem = null;
     this.artifactInventory = null;
     this.museum = null;
+    this.toolSidebar = null;
+    this.artifactSidebar = null;
 
     // Level completion state
     this.isLevelComplete = false;
@@ -106,6 +108,20 @@ class Game {
     // Initialize museum
     this.museum = new Museum();
     this.museum.initialize(this.gameState, () => this.onContinueToNextLevel());
+
+    // Initialize tool sidebar
+    this.toolSidebar = new ToolSidebar();
+    this.toolSidebar.initialize();
+    this.toolSidebar.update(this.gameState.player.currentTool);
+
+    // Initialize artifact sidebar
+    this.artifactSidebar = new ArtifactSidebar();
+    this.artifactSidebar.initialize();
+
+    // Set artifact discovery callback on tool system
+    this.toolSystem.onArtifactDiscovered = (artifactId) => {
+      this.artifactSidebar.showArtifact(artifactId);
+    };
 
     console.log('Game systems initialized');
 
@@ -202,6 +218,7 @@ class Game {
     const toolChanged = this.hudRenderer.processInput(input, this.gameState);
     if (toolChanged) {
       this.canvasManager.markDirty('ui');
+      this.toolSidebar.update(this.gameState.player.currentTool);
     }
 
     // Handle tool usage (spacebar)

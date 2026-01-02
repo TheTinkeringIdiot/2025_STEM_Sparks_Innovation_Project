@@ -50,6 +50,9 @@ class ToolSystem {
       'hammer_chisel': 'Hammer & Chisel'
     };
 
+    // Callback for artifact discovery (set by Game)
+    this.onArtifactDiscovered = null;
+
     // Map tool IDs to animation states
     this.toolAnimationMap = {
       'shovel': 'digging',
@@ -240,6 +243,11 @@ class ToolSystem {
     // Show success message
     this.hintText = `Found: ${artifact.name}`;
     this.hintStartTime = performance.now();
+
+    // Notify artifact sidebar
+    if (this.onArtifactDiscovered) {
+      this.onArtifactDiscovered(artifact.id);
+    }
 
     console.log('Artifact extracted:', artifact.name);
   }
