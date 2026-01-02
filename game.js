@@ -90,13 +90,15 @@ class Game {
     this.flashEffect = new FlashEffect(this.canvasManager);
     this.confettiSystem = new ConfettiSystem();
 
-    // TODO: Initialize animator when sprite sheet is available
-    // this.animator = new CharacterAnimator(spriteSheet);
+    // Initialize sprite sheet and animator
+    const spriteSheetCanvas = generateSpriteSheet(12345);
+    const spriteSheetData = createSpriteSheetData(spriteSheetCanvas);
+    this.animator = new CharacterAnimator(spriteSheetData);
 
-    // Initialize tool system (animator currently null per TODO above)
+    // Initialize tool system
     this.toolSystem = new ToolSystem(
       this.gameState,
-      this.animator, // null for now
+      this.animator,
       this.flashEffect,
       this.confettiSystem
     );
@@ -342,12 +344,11 @@ class Game {
     this.gameState.player.position.y = Math.round(newY);
 
     // Update animation state based on movement
-    // TODO: Call animator.setState() when animator is available
-    // if (velocityX !== 0 || velocityY !== 0) {
-    //   this.animator.setState('walking', this.gameState.player.direction);
-    // } else {
-    //   this.animator.setState('idle', this.gameState.player.direction);
-    // }
+    if (velocityX !== 0 || velocityY !== 0) {
+      this.animator.setState('walking', this.gameState.player.direction);
+    } else {
+      this.animator.setState('idle', this.gameState.player.direction);
+    }
   }
 
   /**
@@ -400,21 +401,9 @@ class Game {
       this.gameState.player.position.y
     );
 
-    // Render player (placeholder circle until sprite sheet is ready)
-    ctx.fillStyle = '#4A90E2';
-    ctx.beginPath();
-    ctx.arc(screenPos.x, screenPos.y, 16, 0, Math.PI * 2);
-    ctx.fill();
-
-    // TODO: Render player sprite when animator is available
-    // if (this.animator) {
-    //   const frame = this.animator.getCurrentFrame();
-    //   ctx.drawImage(
-    //     this.animator.spriteSheet.image,
-    //     frame.srcX, frame.srcY, frame.width, frame.height,
-    //     screenPos.x - 20, screenPos.y - 20, 40, 40
-    //   );
-    // }
+    // Render player sprite (centered on player position)
+    // Sprite is 40x40, offset by -20 to center on position
+    this.animator.render(ctx, screenPos.x - 20, screenPos.y - 20);
 
     // Render POIs
     if (this.gameState.level.pois && this.gameState.level.pois.length > 0) {

@@ -33,6 +33,19 @@ const COLOR_PALETTES = {
     '#F5DEB3', // Wheat (lighter clothes)
     '#A0522D'  // Sienna (boots/details)
   ],
+  femaleArchaeologist: {
+    outline: '#000000',     // Black outline
+    skin: '#E8C4A0',        // Warm beige skin
+    hair: '#5C3317',        // Dark brown hair/ponytail
+    hatCrown: '#8B4513',    // Medium brown hat crown
+    hatBrim: '#A0522D',     // Sienna hat brim
+    vest: '#D4A574',        // Tan/khaki vest
+    vestPocket: '#C9A86C',  // Light tan pocket detail
+    shirt: '#E8E8E8',       // Light gray shirt under vest
+    pants: '#4A5568',       // Gray-blue pants
+    boots: '#2D3748',       // Dark gray boots
+    eyes: '#2D3748',        // Dark eyes
+  },
   default: [
     '#000000', // Black (outline)
     '#4A4A4A', // Dark gray (main body)
@@ -195,6 +208,286 @@ function applyOutline(imageData, size, outlineColor) {
 }
 
 /**
+ * Set a pixel in ImageData
+ * @param {Uint8ClampedArray} data - Image data array
+ * @param {number} size - Frame size
+ * @param {number} x - X coordinate
+ * @param {number} y - Y coordinate
+ * @param {string} hexColor - Hex color string
+ */
+function setPixel(data, size, x, y, hexColor) {
+  if (x < 0 || x >= size || y < 0 || y >= size) return;
+  const index = (y * size + x) * 4;
+  const rgb = hexToRgb(hexColor);
+  data[index] = rgb.r;
+  data[index + 1] = rgb.g;
+  data[index + 2] = rgb.b;
+  data[index + 3] = 255;
+}
+
+/**
+ * Draw a filled rectangle in ImageData
+ * @param {Uint8ClampedArray} data - Image data array
+ * @param {number} size - Frame size
+ * @param {number} x - Start X
+ * @param {number} y - Start Y
+ * @param {number} width - Rectangle width
+ * @param {number} height - Rectangle height
+ * @param {string} hexColor - Hex color string
+ */
+function fillRect(data, size, x, y, width, height, hexColor) {
+  for (let py = y; py < y + height; py++) {
+    for (let px = x; px < x + width; px++) {
+      setPixel(data, size, px, py, hexColor);
+    }
+  }
+}
+
+/**
+ * Generate a female archaeologist sprite frame
+ * @param {number} frameSize - Size of the frame (40px)
+ * @param {object} colors - Color palette object
+ * @param {object} options - Generation options
+ * @returns {ImageData} Generated sprite frame
+ */
+function generateFemaleArchaeologistFrame(frameSize, colors, options = {}) {
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  canvas.width = frameSize;
+  canvas.height = frameSize;
+
+  const imageData = ctx.createImageData(frameSize, frameSize);
+  const data = imageData.data;
+
+  const direction = options.direction || 'down';
+  const isWalking = options.isWalking || false;
+  const walkFrame = options.walkFrame || 0;
+
+  // Character centered in 40x40 frame
+  // Body is approximately 18px wide, 27px tall (50% larger than original)
+  const centerX = 20;
+  const startY = 5; // Top of hat (moved up to fit larger sprite)
+
+  // Walk animation offsets (scaled up)
+  const legOffsets = [0, 2, 0, -2]; // Walk cycle leg positions
+  const bodyBob = isWalking ? [0, -1, 0, -1][walkFrame] : 0;
+  const ponytailSwing = isWalking ? [-2, 0, 2, 0][walkFrame] : 0;
+
+  // Drawing based on direction
+  if (direction === 'down') {
+    // === FACING DOWN (toward camera) === (50% larger)
+
+    // Hat brim (wide, 15px)
+    fillRect(data, frameSize, centerX - 7, startY + bodyBob, 15, 3, colors.hatBrim);
+
+    // Hat crown (narrower, 9px)
+    fillRect(data, frameSize, centerX - 4, startY + 3 + bodyBob, 9, 4, colors.hatCrown);
+
+    // Face (skin)
+    fillRect(data, frameSize, centerX - 3, startY + 7 + bodyBob, 6, 6, colors.skin);
+
+    // Eyes (2 pixels each, dark)
+    fillRect(data, frameSize, centerX - 2, startY + 9 + bodyBob, 2, 1, colors.eyes);
+    fillRect(data, frameSize, centerX + 1, startY + 9 + bodyBob, 2, 1, colors.eyes);
+
+    // Hair sides (framing face)
+    fillRect(data, frameSize, centerX - 5, startY + 7 + bodyBob, 2, 3, colors.hair);
+    fillRect(data, frameSize, centerX + 4, startY + 7 + bodyBob, 2, 3, colors.hair);
+
+    // Neck
+    fillRect(data, frameSize, centerX - 2, startY + 13 + bodyBob, 4, 2, colors.skin);
+
+    // Vest (torso)
+    fillRect(data, frameSize, centerX - 5, startY + 15 + bodyBob, 10, 7, colors.vest);
+
+    // Shirt visible at center
+    fillRect(data, frameSize, centerX - 2, startY + 15 + bodyBob, 4, 6, colors.shirt);
+
+    // Vest pockets
+    fillRect(data, frameSize, centerX - 4, startY + 18 + bodyBob, 2, 2, colors.vestPocket);
+    fillRect(data, frameSize, centerX + 3, startY + 18 + bodyBob, 2, 2, colors.vestPocket);
+
+    // Arms (skin)
+    fillRect(data, frameSize, centerX - 7, startY + 16 + bodyBob, 2, 4, colors.skin);
+    fillRect(data, frameSize, centerX + 6, startY + 16 + bodyBob, 2, 4, colors.skin);
+
+    // Pants
+    fillRect(data, frameSize, centerX - 5, startY + 22 + bodyBob, 10, 6, colors.pants);
+
+    // Leg separation
+    fillRect(data, frameSize, centerX - 1, startY + 24 + bodyBob, 2, 3, colors.outline);
+
+    // Walking leg animation
+    if (isWalking) {
+      const leftLegOffset = legOffsets[walkFrame];
+      const rightLegOffset = legOffsets[(walkFrame + 2) % 4];
+
+      // Left leg
+      fillRect(data, frameSize, centerX - 5, startY + 22 + bodyBob + leftLegOffset, 4, 6, colors.pants);
+      // Right leg
+      fillRect(data, frameSize, centerX + 1, startY + 22 + bodyBob + rightLegOffset, 4, 6, colors.pants);
+    }
+
+    // Boots
+    fillRect(data, frameSize, centerX - 5, startY + 28 + bodyBob, 4, 3, colors.boots);
+    fillRect(data, frameSize, centerX + 1, startY + 28 + bodyBob, 4, 3, colors.boots);
+
+  } else if (direction === 'up') {
+    // === FACING UP (away from camera) === (50% larger)
+
+    // Hat crown (back view)
+    fillRect(data, frameSize, centerX - 4, startY + bodyBob, 9, 6, colors.hatCrown);
+
+    // Hat brim (narrower from back)
+    fillRect(data, frameSize, centerX - 6, startY + 6 + bodyBob, 12, 2, colors.hatBrim);
+
+    // Back of head (hair)
+    fillRect(data, frameSize, centerX - 3, startY + 8 + bodyBob, 6, 4, colors.hair);
+
+    // Ponytail (hanging down back)
+    fillRect(data, frameSize, centerX - 2 + ponytailSwing, startY + 12 + bodyBob, 3, 8, colors.hair);
+    fillRect(data, frameSize, centerX - 1 + ponytailSwing, startY + 20 + bodyBob, 2, 2, colors.hair);
+
+    // Neck
+    fillRect(data, frameSize, centerX - 2, startY + 12 + bodyBob, 4, 3, colors.skin);
+
+    // Vest (back)
+    fillRect(data, frameSize, centerX - 5, startY + 15 + bodyBob, 10, 7, colors.vest);
+
+    // Arms
+    fillRect(data, frameSize, centerX - 7, startY + 16 + bodyBob, 2, 4, colors.skin);
+    fillRect(data, frameSize, centerX + 6, startY + 16 + bodyBob, 2, 4, colors.skin);
+
+    // Pants
+    fillRect(data, frameSize, centerX - 5, startY + 22 + bodyBob, 10, 6, colors.pants);
+
+    // Leg separation
+    fillRect(data, frameSize, centerX - 1, startY + 24 + bodyBob, 2, 3, colors.outline);
+
+    // Walking animation
+    if (isWalking) {
+      const leftLegOffset = legOffsets[walkFrame];
+      const rightLegOffset = legOffsets[(walkFrame + 2) % 4];
+      fillRect(data, frameSize, centerX - 5, startY + 22 + bodyBob + leftLegOffset, 4, 6, colors.pants);
+      fillRect(data, frameSize, centerX + 1, startY + 22 + bodyBob + rightLegOffset, 4, 6, colors.pants);
+    }
+
+    // Boots
+    fillRect(data, frameSize, centerX - 5, startY + 28 + bodyBob, 4, 3, colors.boots);
+    fillRect(data, frameSize, centerX + 1, startY + 28 + bodyBob, 4, 3, colors.boots);
+
+  } else if (direction === 'left') {
+    // === FACING LEFT (profile) === (50% larger)
+
+    // Hat (profile)
+    fillRect(data, frameSize, centerX - 5, startY + bodyBob, 8, 3, colors.hatBrim);
+    fillRect(data, frameSize, centerX - 3, startY + 3 + bodyBob, 6, 4, colors.hatCrown);
+
+    // Hair under hat
+    fillRect(data, frameSize, centerX - 3, startY + 7 + bodyBob, 5, 3, colors.hair);
+
+    // Face (profile)
+    fillRect(data, frameSize, centerX - 5, startY + 7 + bodyBob, 3, 6, colors.skin);
+
+    // Eye
+    fillRect(data, frameSize, centerX - 5, startY + 9 + bodyBob, 2, 1, colors.eyes);
+
+    // Ponytail extending to the right
+    fillRect(data, frameSize, centerX + 2 + ponytailSwing, startY + 8 + bodyBob, 5, 3, colors.hair);
+    fillRect(data, frameSize, centerX + 4 + ponytailSwing, startY + 11 + bodyBob, 3, 3, colors.hair);
+    fillRect(data, frameSize, centerX + 5 + ponytailSwing, startY + 14 + bodyBob, 2, 2, colors.hair);
+
+    // Neck
+    fillRect(data, frameSize, centerX - 3, startY + 13 + bodyBob, 3, 2, colors.skin);
+
+    // Vest (side view)
+    fillRect(data, frameSize, centerX - 5, startY + 15 + bodyBob, 8, 7, colors.vest);
+
+    // Shirt peek
+    fillRect(data, frameSize, centerX - 5, startY + 15 + bodyBob, 2, 6, colors.shirt);
+
+    // Pocket
+    fillRect(data, frameSize, centerX, startY + 18 + bodyBob, 2, 2, colors.vestPocket);
+
+    // Arm (front)
+    fillRect(data, frameSize, centerX - 7, startY + 16 + bodyBob, 2, 4, colors.skin);
+
+    // Pants (side)
+    fillRect(data, frameSize, centerX - 4, startY + 22 + bodyBob, 7, 6, colors.pants);
+
+    // Walking animation (legs front/back)
+    if (isWalking) {
+      const frontOffset = legOffsets[walkFrame];
+      const backOffset = legOffsets[(walkFrame + 2) % 4];
+      // Front leg
+      fillRect(data, frameSize, centerX - 5 + frontOffset, startY + 22 + bodyBob, 3, 6, colors.pants);
+      // Back leg
+      fillRect(data, frameSize, centerX + backOffset, startY + 22 + bodyBob, 3, 6, colors.pants);
+    }
+
+    // Boots
+    fillRect(data, frameSize, centerX - 4, startY + 28 + bodyBob, 5, 3, colors.boots);
+
+  } else if (direction === 'right') {
+    // === FACING RIGHT (profile, mirrored) === (50% larger)
+
+    // Hat (profile)
+    fillRect(data, frameSize, centerX - 3, startY + bodyBob, 8, 3, colors.hatBrim);
+    fillRect(data, frameSize, centerX - 3, startY + 3 + bodyBob, 6, 4, colors.hatCrown);
+
+    // Hair under hat
+    fillRect(data, frameSize, centerX - 2, startY + 7 + bodyBob, 5, 3, colors.hair);
+
+    // Face (profile)
+    fillRect(data, frameSize, centerX + 2, startY + 7 + bodyBob, 3, 6, colors.skin);
+
+    // Eye
+    fillRect(data, frameSize, centerX + 4, startY + 9 + bodyBob, 2, 1, colors.eyes);
+
+    // Ponytail extending to the left
+    fillRect(data, frameSize, centerX - 7 + ponytailSwing, startY + 8 + bodyBob, 5, 3, colors.hair);
+    fillRect(data, frameSize, centerX - 7 + ponytailSwing, startY + 11 + bodyBob, 3, 3, colors.hair);
+    fillRect(data, frameSize, centerX - 7 + ponytailSwing, startY + 14 + bodyBob, 2, 2, colors.hair);
+
+    // Neck
+    fillRect(data, frameSize, centerX, startY + 13 + bodyBob, 3, 2, colors.skin);
+
+    // Vest (side view)
+    fillRect(data, frameSize, centerX - 3, startY + 15 + bodyBob, 8, 7, colors.vest);
+
+    // Shirt peek
+    fillRect(data, frameSize, centerX + 3, startY + 15 + bodyBob, 2, 6, colors.shirt);
+
+    // Pocket
+    fillRect(data, frameSize, centerX - 2, startY + 18 + bodyBob, 2, 2, colors.vestPocket);
+
+    // Arm (front)
+    fillRect(data, frameSize, centerX + 5, startY + 16 + bodyBob, 2, 4, colors.skin);
+
+    // Pants (side)
+    fillRect(data, frameSize, centerX - 3, startY + 22 + bodyBob, 7, 6, colors.pants);
+
+    // Walking animation
+    if (isWalking) {
+      const frontOffset = legOffsets[walkFrame];
+      const backOffset = legOffsets[(walkFrame + 2) % 4];
+      // Front leg
+      fillRect(data, frameSize, centerX + 2 - frontOffset, startY + 22 + bodyBob, 3, 6, colors.pants);
+      // Back leg
+      fillRect(data, frameSize, centerX - 3 - backOffset, startY + 22 + bodyBob, 3, 6, colors.pants);
+    }
+
+    // Boots
+    fillRect(data, frameSize, centerX - 1, startY + 28 + bodyBob, 5, 3, colors.boots);
+  }
+
+  // Apply black outline
+  const outlined = applyOutline(imageData, frameSize, colors.outline);
+
+  return outlined;
+}
+
+/**
  * Generate a walk animation frame with leg variation
  * @param {number} frameSize - Size of the frame
  * @param {string[]} palette - Color palette
@@ -283,8 +576,7 @@ function generateSpriteSheet(seed = 12345) {
   // Disable image smoothing for crisp pixel art
   ctx.imageSmoothingEnabled = false;
 
-  const random = createSeededRandom(seed);
-  const palette = COLOR_PALETTES.archeologist;
+  const colors = COLOR_PALETTES.femaleArchaeologist;
 
   // Generate sprite sheet by row
   const directions = ['up', 'down', 'left', 'right'];
@@ -294,39 +586,64 @@ function generateSpriteSheet(seed = 12345) {
     const direction = directions[row];
 
     // Column 0: Idle frame
-    const idleFrame = generateSymmetricalFrame(FRAME_SIZE, palette, random, { bodySize: 10 });
+    const idleFrame = generateFemaleArchaeologistFrame(FRAME_SIZE, colors, {
+      direction: direction,
+      isWalking: false,
+      walkFrame: 0
+    });
     ctx.putImageData(idleFrame, 0, row * FRAME_SIZE);
 
     // Columns 1-4: Walk frames
     for (let col = 1; col < 5; col++) {
-      const walkFrame = generateWalkFrame(FRAME_SIZE, palette, random, col - 1, direction);
+      const walkFrame = generateFemaleArchaeologistFrame(FRAME_SIZE, colors, {
+        direction: direction,
+        isWalking: true,
+        walkFrame: col - 1
+      });
       ctx.putImageData(walkFrame, col * FRAME_SIZE, row * FRAME_SIZE);
     }
   }
 
   // Row 4: Tool animations (dig 3 frames, pickaxe 2 frames)
+  // Use facing down for tool animations
   // Dig: columns 0-2
   for (let col = 0; col < 3; col++) {
-    const digFrame = generateToolFrame(FRAME_SIZE, palette, random, 'dig', col);
+    const digFrame = generateFemaleArchaeologistFrame(FRAME_SIZE, colors, {
+      direction: 'down',
+      isWalking: false,
+      walkFrame: 0
+    });
     ctx.putImageData(digFrame, col * FRAME_SIZE, 4 * FRAME_SIZE);
   }
 
   // Pickaxe: columns 3-4
   for (let col = 3; col < 5; col++) {
-    const pickFrame = generateToolFrame(FRAME_SIZE, palette, random, 'pickaxe', col - 3);
+    const pickFrame = generateFemaleArchaeologistFrame(FRAME_SIZE, colors, {
+      direction: 'down',
+      isWalking: false,
+      walkFrame: 0
+    });
     ctx.putImageData(pickFrame, col * FRAME_SIZE, 4 * FRAME_SIZE);
   }
 
   // Row 5: Tool animations (brush 2 frames, chisel 2 frames)
   // Brush: columns 0-1
   for (let col = 0; col < 2; col++) {
-    const brushFrame = generateToolFrame(FRAME_SIZE, palette, random, 'brush', col);
+    const brushFrame = generateFemaleArchaeologistFrame(FRAME_SIZE, colors, {
+      direction: 'down',
+      isWalking: false,
+      walkFrame: 0
+    });
     ctx.putImageData(brushFrame, col * FRAME_SIZE, 5 * FRAME_SIZE);
   }
 
   // Chisel: columns 2-3
   for (let col = 2; col < 4; col++) {
-    const chiselFrame = generateToolFrame(FRAME_SIZE, palette, random, 'chisel', col - 2);
+    const chiselFrame = generateFemaleArchaeologistFrame(FRAME_SIZE, colors, {
+      direction: 'down',
+      isWalking: false,
+      walkFrame: 0
+    });
     ctx.putImageData(chiselFrame, col * FRAME_SIZE, 5 * FRAME_SIZE);
   }
 
