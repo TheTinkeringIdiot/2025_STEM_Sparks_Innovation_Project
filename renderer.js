@@ -63,10 +63,11 @@ class TileRenderer {
       grass: [127, 170, 101],
       dirt: [155, 118, 83],
       stone: [128, 128, 128],
-      sand: [237, 201, 175]
+      sand: [237, 201, 175],
+      water: [60, 120, 190]
     };
 
-    const tileTypes = ['ground', 'grass', 'dirt', 'stone', 'sand'].map(name => ({
+    const tileTypes = ['ground', 'grass', 'dirt', 'stone', 'sand', 'water'].map(name => ({
       name,
       baseColor: (this.terrainColorOverrides && this.terrainColorOverrides[name])
         ? this.terrainColorOverrides[name]
@@ -191,6 +192,29 @@ class TileRenderer {
           ctx.beginPath();
           ctx.arc(x, y, 1 + rand(), 0, Math.PI * 2);
           ctx.fill();
+        }
+        break;
+
+      case 'water':
+        // Wave highlights
+        ctx.strokeStyle = `rgba(${lr}, ${lg}, ${lb}, 0.35)`;
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 3; i++) {
+          const y = 8 + i * 10 + rand() * 4;
+          ctx.beginPath();
+          ctx.moveTo(2, y);
+          ctx.quadraticCurveTo(10, y - 2, 20, y);
+          ctx.quadraticCurveTo(30, y + 2, 38, y);
+          ctx.stroke();
+        }
+        // Subtle darker ripple
+        ctx.strokeStyle = `rgba(${dr}, ${dg}, ${db}, 0.2)`;
+        for (let i = 0; i < 2; i++) {
+          const y = 14 + i * 12 + rand() * 3;
+          ctx.beginPath();
+          ctx.moveTo(5, y);
+          ctx.quadraticCurveTo(20, y + 1.5, 35, y);
+          ctx.stroke();
         }
         break;
     }
@@ -510,7 +534,8 @@ class TileRenderer {
       grass: [127, 170, 101],
       dirt: [155, 118, 83],
       stone: [128, 128, 128],
-      sand: [237, 201, 175]
+      sand: [237, 201, 175],
+      water: [60, 120, 190]
     };
     return colors[terrainType] || colors.grass;
   }

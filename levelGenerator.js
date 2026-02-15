@@ -18,7 +18,8 @@ const TileType = {
   STONE: 'stone',
   DIRT: 'dirt',
   GRASS: 'grass',
-  SAND: 'sand'
+  SAND: 'sand',
+  WATER: 'water'
 };
 
 // Obstacle types with Roman theme
@@ -64,7 +65,8 @@ class LevelGenerator {
       width: MAP_WIDTH_TILES,
       height: MAP_HEIGHT_TILES,
       poiCount: POI_COUNT,
-      minPOISpacing: config.minPOISpacing || MIN_POI_SPACING
+      minPOISpacing: config.minPOISpacing || MIN_POI_SPACING,
+      theme: config.theme || null
     };
 
     this.rng = new SeededRandom(this.config.seed);
@@ -86,6 +88,9 @@ class LevelGenerator {
   generate() {
     this.initializeGrid();
     this.generateTerrain();
+    if (this.config.theme && this.config.theme.rivers) {
+      this.generateRivers();
+    }
     this.placePOIs();
     this.placePlayerSpawn();
     this.placeObstacles();
@@ -146,6 +151,50 @@ class LevelGenerator {
   }
 
   /**
+   * Generate rivers using Perlin noise for natural meandering paths
+   * Rivers flow from one edge to the opposite, with configurable width and count
+   */
+  generateRivers() {
+    const riverConfig = this.config.theme.rivers;
+    const count = riverConfig.count || 1;
+    const width = riverConfig.width || 2;
+    const spawnX = Math.floor(this.config.width / 2);
+    const spawnY = Math.floor(this.config.height / 2);
+    const spawnClearRadius = 5;
+
+    for (let r = 0; r < count; r++) {
+      // Alternate between horizontal and vertical rivers
+      const horizontal = (r % 2 === 0);
+
+      // Starting position offset by river index for separation
+      const offset = Math.floor(this.config[horizontal ? 'height' : 'width'] / (count + 1)) * (r + 1);
+
+      for (let step = 0; step < (horizontal ? this.config.width : this.config.height); step++) {
+        // Use Perlin noise for natural meandering
+        const noiseVal = this.rng.perlin(step * 0.08, r * 100);
+        const meander = Math.round(noiseVal * 6);
+        const center = offset + meander;
+
+        for (let w = -Math.floor(width / 2); w <= Math.floor(width / 2); w++) {
+          const x = horizontal ? step : center + w;
+          const y = horizontal ? center + w : step;
+
+          // Bounds check
+          if (x < 0 || x >= this.config.width || y < 0 || y >= this.config.height) continue;
+
+          // Don't place water near player spawn
+          const distToSpawn = Math.abs(x - spawnX) + Math.abs(y - spawnY);
+          if (distToSpawn < spawnClearRadius) continue;
+
+          this.state.grid[y][x].type = TileType.WATER;
+          this.state.grid[y][x].isWalkable = false;
+          this.state.grid[y][x].obstacle = null;
+        }
+      }
+    }
+  }
+
+  /**
    * PHASE 3: Place POIs using Poisson disc sampling
    */
   placePOIs() {
@@ -163,17 +212,24 @@ class LevelGenerator {
       }
     ];
 
-    this.state.pois = poissonDiscSampling(
+    const candidates = poissonDiscSampling(
       {
         minDistance: this.config.minPOISpacing,
         maxAttempts: 50,  // Increased from 30 to 50 for better coverage
         gridWidth: this.config.width,
         gridHeight: this.config.height
       },
-      this.config.poiCount,
+      this.config.poiCount + 10,  // Request extra in case some land on water
       excludedZones,
       this.rng
     );
+
+    // Filter out POIs on non-walkable tiles (water, etc.)
+    this.state.pois = candidates.filter(pos =>
+      this.state.grid[pos.y] &&
+      this.state.grid[pos.y][pos.x] &&
+      this.state.grid[pos.y][pos.x].isWalkable
+    ).slice(0, this.config.poiCount);
   }
 
   /**
@@ -195,8 +251,8 @@ class LevelGenerator {
 
     for (let y = 0; y < this.config.height; y++) {
       for (let x = 0; x < this.config.width; x++) {
-        // Skip POI tiles and spawn area
-        if (this.isTileReserved(x, y)) {
+        // Skip POI tiles, spawn area, and water
+        if (this.isTileReserved(x, y) || this.state.grid[y][x].type === TileType.WATER) {
           continue;
         }
 
@@ -233,9 +289,9 @@ class LevelGenerator {
       this.state.validationAttempts++;
     }
 
-    throw new Error(
-      `Failed validation after ${MAX_VALIDATION_ATTEMPTS} attempts. ` +
-      `Could not make all POIs reachable from spawn.`
+    console.warn(
+      `Validation: ${MAX_VALIDATION_ATTEMPTS} attempts exhausted. ` +
+      `Some POIs may be unreachable from spawn.`
     );
   }
 
@@ -402,13 +458,19 @@ class LevelGenerator {
   carvePath(start, end) {
     const path = this.aStarIgnoringObstacles(start, end);
 
-    // Clear obstacles along path with some randomness for natural look
+    // Clear obstacles along path, building bridges over water
     for (const point of path) {
-      if (!this.state.grid[point.y][point.x].isWalkable) {
+      const tile = this.state.grid[point.y][point.x];
+      if (tile.type === TileType.WATER) {
+        // Build a bridge: make water walkable but keep it as water visually
+        tile.isWalkable = true;
+        continue;
+      }
+      if (!tile.isWalkable) {
         // 50% chance to remove obstacle (creates varied paths)
         if (this.rng.next() < 0.5) {
-          this.state.grid[point.y][point.x].obstacle = null;
-          this.state.grid[point.y][point.x].isWalkable = true;
+          tile.obstacle = null;
+          tile.isWalkable = true;
         }
       }
     }

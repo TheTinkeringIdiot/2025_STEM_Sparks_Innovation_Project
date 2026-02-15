@@ -60,33 +60,31 @@ const LEVEL_THEMES = {
   2: {
     name: 'Roman Villa & Forum',
 
-    // More sand and dirt, less grass — arid excavation site
-    terrainThresholds: [-0.1, 0.1, 0.22],
+    // Sand and brown dirt only — no stone, no grass
+    terrainThresholds: [-2, 0.1, -2],
 
-    // Orange/brown sand vibes — sun-baked Mediterranean dig site
+    // Orange sand + brown dirt desert palette
     terrainColorOverrides: {
-      stone: [175, 145, 105],   // Warm sandstone
-      grass: [155, 140, 85],    // Dried/yellowed scrub
-      dirt: [180, 130, 80],     // Warm orange-brown earth
-      sand: [225, 180, 130],    // Orange-tinted sand
-      ground: [165, 125, 80]    // Medium warm brown
+      stone: [140, 100, 55],    // Dark brown (unused)
+      grass: [160, 115, 60],    // Brown (unused)
+      dirt: [145, 100, 50],     // Brown earth
+      sand: [230, 160, 60],     // Orange sand
+      ground: [155, 108, 55]    // Medium brown
     },
 
-    // Heavy on ruins, light on vegetation
+    // Ruins and rocks only — no vegetation
     obstacleWeights: [
-      { type: 'ruin_column', weight: 0.30 },
-      { type: 'ruin_wall', weight: 0.30 },
-      { type: 'tree_cypress', weight: 0.08 },
-      { type: 'tree_olive', weight: 0.07 },
-      { type: 'rock_small', weight: 0.15 },
-      { type: 'rock_large', weight: 0.10 }
+      { type: 'ruin_column', weight: 0.35 },
+      { type: 'ruin_wall', weight: 0.35 },
+      { type: 'rock_small', weight: 0.18 },
+      { type: 'rock_large', weight: 0.12 }
     ],
 
     // Fewer natural decorations in urban setting
     decorationChance: 0.12,
 
-    // Exclude green vegetation decorations — keep only arid/urban ones
-    excludeDecorations: ['grass_tuft', 'flower_yellow', 'flower_purple', 'clover'],
+    // Exclude all vegetation decorations — desert only
+    excludeDecorations: ['grass_tuft', 'flower_yellow', 'flower_purple', 'clover', 'leaf', 'twig'],
 
     // Level 2 has shovel + pickaxe (per TOOL_UNLOCKS)
     artifactPool: {
@@ -113,8 +111,58 @@ const LEVEL_THEMES = {
     ]
   },
 
-  // Placeholder themes for islands 3-5 (use level 1 defaults with distinct names)
-  3: { name: 'Harbor Town' },
+  3: {
+    name: 'Harbor Town',
+
+    // Mostly grass with some dirt — lush riverside port
+    terrainThresholds: [-2, -0.2, 0.6],
+
+    // No color overrides — use default green grass
+    terrainColorOverrides: null,
+
+    // Rivers: one horizontal river across the map
+    rivers: {
+      count: 2,
+      width: 3
+    },
+
+    // Port town: mix of trees, ruins, and rocks
+    obstacleWeights: [
+      { type: 'ruin_column', weight: 0.15 },
+      { type: 'ruin_wall', weight: 0.15 },
+      { type: 'tree_cypress', weight: 0.25 },
+      { type: 'tree_olive', weight: 0.20 },
+      { type: 'rock_small', weight: 0.15 },
+      { type: 'rock_large', weight: 0.10 }
+    ],
+
+    decorationChance: 0.18,
+
+    // Level 3 has shovel + pickaxe + brush
+    artifactPool: {
+      valuable: {
+        shovel: ['amphora', 'oil_lamp', 'votive_statue'],
+        pickaxe: ['mosaic_tile', 'fresco_fragment'],
+        brush: ['denarius_coin', 'signet_ring', 'fibula']
+      },
+      junk: {
+        shovel: ['corroded_nail', 'animal_bone'],
+        pickaxe: ['stone_fragment'],
+        brush: ['broken_pottery']
+      }
+    },
+
+    poiPrefixes: ['Sunken', 'Riverside', 'Docked', 'Weathered', 'Tidal'],
+    poiSuffixes: ['Wharf', 'Warehouse', 'Anchor', 'Dock Post', 'Cargo Hold', 'Quay Wall'],
+
+    poiDescriptions: [
+      'The remains of a busy Roman harbor lie beneath the soil.',
+      'Trade goods from across the Mediterranean once passed through here.',
+      'An old docking area where Roman ships were moored.',
+      'Cargo from distant provinces was unloaded at this spot.',
+      'A once-thriving port that connected Rome to the world.'
+    ]
+  },
   4: { name: 'Mountain Pass' },
   5: { name: 'Sacred Grove' }
 };
