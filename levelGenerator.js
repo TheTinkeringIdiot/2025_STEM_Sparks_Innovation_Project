@@ -120,16 +120,20 @@ class LevelGenerator {
   generateTerrain() {
     this.state.phase = GenerationPhase.TERRAIN;
 
+    const thresholds = (this.config.theme && this.config.theme.terrainThresholds)
+      ? this.config.theme.terrainThresholds
+      : [-0.3, 0.0, 0.3];
+
     for (let y = 0; y < this.config.height; y++) {
       for (let x = 0; x < this.config.width; x++) {
         const noise = this.rng.perlin(x * 0.1, y * 0.1);
 
-        // Assign terrain type based on noise value
-        if (noise < -0.3) {
+        // Assign terrain type based on theme-configurable noise thresholds
+        if (noise < thresholds[0]) {
           this.state.grid[y][x].type = TileType.STONE;
-        } else if (noise < 0.0) {
+        } else if (noise < thresholds[1]) {
           this.state.grid[y][x].type = TileType.DIRT;
-        } else if (noise < 0.3) {
+        } else if (noise < thresholds[2]) {
           this.state.grid[y][x].type = TileType.GRASS;
         } else {
           this.state.grid[y][x].type = TileType.SAND;
@@ -310,7 +314,7 @@ class LevelGenerator {
    * @returns {string} Obstacle type
    */
   selectObstacleType() {
-    const types = [
+    const defaultWeights = [
       { type: ObstacleType.RUIN_COLUMN, weight: 0.2 },
       { type: ObstacleType.RUIN_WALL, weight: 0.2 },
       { type: ObstacleType.TREE_CYPRESS, weight: 0.2 },
@@ -318,6 +322,10 @@ class LevelGenerator {
       { type: ObstacleType.ROCK_SMALL, weight: 0.15 },
       { type: ObstacleType.ROCK_LARGE, weight: 0.1 }
     ];
+
+    const types = (this.config.theme && this.config.theme.obstacleWeights)
+      ? this.config.theme.obstacleWeights
+      : defaultWeights;
 
     return this.rng.weightedChoice(types).type;
   }
@@ -550,17 +558,21 @@ class LevelGenerator {
     // Get available tools for this level
     const availableTools = this.getAvailableTools();
 
+    // Use theme artifact pool if available, otherwise fall back to defaults
+    const themePool = this.config.theme && this.config.theme.artifactPool;
+
     // Build list of artifacts that require only available tools
     let artifactIds = [];
 
     if (isValuable) {
-      // Valuable artifacts filtered by available tools
-      const valuableArtifacts = {
-        shovel: ['amphora', 'oil_lamp', 'votive_statue'],
-        pickaxe: ['mosaic_tile', 'fresco_fragment'],
-        brush: ['denarius_coin', 'signet_ring', 'fibula'],
-        hammer_chisel: ['strigil', 'gladius_pommel']
-      };
+      const valuableArtifacts = themePool
+        ? themePool.valuable
+        : {
+            shovel: ['amphora', 'oil_lamp', 'votive_statue'],
+            pickaxe: ['mosaic_tile', 'fresco_fragment'],
+            brush: ['denarius_coin', 'signet_ring', 'fibula'],
+            hammer_chisel: ['strigil', 'gladius_pommel']
+          };
 
       for (const tool of availableTools) {
         if (valuableArtifacts[tool]) {
@@ -568,13 +580,14 @@ class LevelGenerator {
         }
       }
     } else {
-      // Junk artifacts filtered by available tools
-      const junkArtifacts = {
-        shovel: ['corroded_nail', 'animal_bone'],
-        pickaxe: ['stone_fragment'],
-        brush: ['broken_pottery'],
-        hammer_chisel: ['weathered_brick']
-      };
+      const junkArtifacts = themePool
+        ? themePool.junk
+        : {
+            shovel: ['corroded_nail', 'animal_bone'],
+            pickaxe: ['stone_fragment'],
+            brush: ['broken_pottery'],
+            hammer_chisel: ['weathered_brick']
+          };
 
       for (const tool of availableTools) {
         if (junkArtifacts[tool]) {
@@ -631,8 +644,12 @@ class LevelGenerator {
    * @returns {string} POI name
    */
   generatePOIName(id) {
-    const prefixes = ['Ancient', 'Lost', 'Hidden', 'Forgotten', 'Sacred'];
-    const suffixes = ['Altar', 'Column', 'Inscription', 'Mosaic', 'Statue', 'Temple'];
+    const defaultPrefixes = ['Ancient', 'Lost', 'Hidden', 'Forgotten', 'Sacred'];
+    const defaultSuffixes = ['Altar', 'Column', 'Inscription', 'Mosaic', 'Statue', 'Temple'];
+
+    const prefixes = (this.config.theme && this.config.theme.poiPrefixes) || defaultPrefixes;
+    const suffixes = (this.config.theme && this.config.theme.poiSuffixes) || defaultSuffixes;
+
     return `${this.rng.choice(prefixes)} ${this.rng.choice(suffixes)} ${id + 1}`;
   }
 
@@ -642,13 +659,15 @@ class LevelGenerator {
    * @returns {string} POI description
    */
   generatePOIDescription(id) {
-    const descriptions = [
+    const defaultDescriptions = [
       'A remarkable Roman artifact waiting to be discovered.',
       'Evidence of ancient Roman civilization lies here.',
       'This site holds secrets from the Roman Empire.',
       'A place where Romans once walked and worked.',
       'Ancient history preserved in stone and earth.'
     ];
+
+    const descriptions = (this.config.theme && this.config.theme.poiDescriptions) || defaultDescriptions;
     return this.rng.choice(descriptions);
   }
 }
