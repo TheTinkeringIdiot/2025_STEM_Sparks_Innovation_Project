@@ -331,15 +331,15 @@ class TitleScreen {
     const ringContainer = document.createElement('div');
     ringContainer.style.cssText = `
       position: relative;
-      width: 650px;
-      height: 650px;
+      width: 1000px;
+      height: 1000px;
       z-index: 1;
     `;
 
     // Place islands in a ring
-    const centerX = 325;
-    const centerY = 325;
-    const radius = 240;
+    const centerX = 500;
+    const centerY = 500;
+    const radius = 370;
 
     ISLANDS.forEach((island, index) => {
       // Calculate position on circle (-90deg offset so first island is at top)
@@ -354,8 +354,8 @@ class TitleScreen {
     // Draw connecting dotted lines between islands
     const svgNS = 'http://www.w3.org/2000/svg';
     const svg = document.createElementNS(svgNS, 'svg');
-    svg.setAttribute('width', '650');
-    svg.setAttribute('height', '650');
+    svg.setAttribute('width', '1000');
+    svg.setAttribute('height', '1000');
     svg.style.cssText = `
       position: absolute;
       top: 0; left: 0;
@@ -392,7 +392,7 @@ class TitleScreen {
    * @private
    */
   createIslandElement(island, x, y) {
-    const islandSize = 110;
+    const islandSize = 210;
 
     // Wrapper for positioning
     const wrapper = document.createElement('div');
@@ -464,43 +464,25 @@ class TitleScreen {
       return terrainPalette[0].color;
     };
 
-    // Water colors
-    const waterDeep = [30, 65, 120];
-    const waterShallow = [55, 105, 170];
-
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
+        if (!isLand(c, r)) continue; // Skip water — leave transparent
+
         let color;
+        // Check if this is a beach pixel (land adjacent to non-land)
+        const isBeach = !isLand(c - 1, r) || !isLand(c + 1, r) ||
+                        !isLand(c, r - 1) || !isLand(c, r + 1);
 
-        if (isLand(c, r)) {
-          // Check if this is a beach pixel (land adjacent to water)
-          const isBeach = !isLand(c - 1, r) || !isLand(c + 1, r) ||
-                          !isLand(c, r - 1) || !isLand(c, r + 1);
-
-          if (isBeach) {
-            // Sandy beach edge
-            const s = rand() * 12;
-            color = [220 + s, 195 + s, 150 + s];
-          } else {
-            const base = pickTerrain();
-            const shift = (rand() - 0.5) * 18;
-            color = [
-              Math.min(255, Math.max(0, base[0] + shift)),
-              Math.min(255, Math.max(0, base[1] + shift)),
-              Math.min(255, Math.max(0, base[2] + shift))
-            ];
-          }
+        if (isBeach) {
+          const s = rand() * 12;
+          color = [220 + s, 195 + s, 150 + s];
         } else {
-          // Ocean — vary between deep and shallow
-          const dx = (c - cx) / cols;
-          const dy = (r - cy) / rows;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          const t = Math.min(1, dist * 1.5);
-          const wn = rand() * 10;
+          const base = pickTerrain();
+          const shift = (rand() - 0.5) * 18;
           color = [
-            waterDeep[0] * t + waterShallow[0] * (1 - t) + wn,
-            waterDeep[1] * t + waterShallow[1] * (1 - t) + wn,
-            waterDeep[2] * t + waterShallow[2] * (1 - t) + wn
+            Math.min(255, Math.max(0, base[0] + shift)),
+            Math.min(255, Math.max(0, base[1] + shift)),
+            Math.min(255, Math.max(0, base[2] + shift))
           ];
         }
 
@@ -535,7 +517,6 @@ class TitleScreen {
       width: ${canvas.width}px;
       height: ${canvas.height}px;
       position: relative;
-      transition: box-shadow 0.2s ease;
     `;
     canvas.style.cssText = `
       display: block;
@@ -584,24 +565,15 @@ class TitleScreen {
       text-align: center;
     `;
 
-    // Hover effects
+    // Hover effects — drop-shadow follows the island shape (respects transparency)
     wrapper.addEventListener('mouseenter', () => {
       wrapper.style.transform = 'scale(1.1)';
-      blob.style.boxShadow = `
-        0 4px 15px rgba(0, 0, 0, 0.5),
-        0 0 30px rgba(212, 168, 75, 0.4),
-        inset 0 -8px 15px rgba(0, 0, 0, 0.2),
-        inset 0 4px 10px rgba(255, 255, 255, 0.15)
-      `;
+      canvas.style.filter = 'drop-shadow(0 0 8px rgba(212, 168, 75, 0.8)) drop-shadow(0 0 16px rgba(212, 168, 75, 0.4))';
       label.style.color = '#D4A84B';
     });
     wrapper.addEventListener('mouseleave', () => {
       wrapper.style.transform = 'scale(1)';
-      blob.style.boxShadow = `
-        0 4px 15px rgba(0, 0, 0, 0.5),
-        inset 0 -8px 15px rgba(0, 0, 0, 0.2),
-        inset 0 4px 10px rgba(255, 255, 255, 0.1)
-      `;
+      canvas.style.filter = 'none';
       label.style.color = '#D4C8A0';
     });
 
