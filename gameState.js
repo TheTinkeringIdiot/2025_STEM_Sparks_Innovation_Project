@@ -127,6 +127,100 @@ const ARTIFACT_CATALOG = {
     value: 4,
     toolRequired: 'hammer_chisel',
     isJunk: true
+  },
+
+  // === Level 2 Artifacts: Roman Villa & Forum ===
+
+  // Valuable artifacts ($100 each)
+  bronze_speculum: {
+    id: 'bronze_speculum',
+    name: 'Bronze Speculum',
+    description: 'A polished bronze hand mirror used for personal grooming',
+    value: 100,
+    toolRequired: 'shovel',
+    isJunk: false
+  },
+  garum_amphora: {
+    id: 'garum_amphora',
+    name: 'Garum Amphora',
+    description: 'A sealed vessel once containing prized Roman fish sauce',
+    value: 100,
+    toolRequired: 'shovel',
+    isJunk: false
+  },
+  lead_curse_tablet: {
+    id: 'lead_curse_tablet',
+    name: 'Lead Curse Tablet',
+    description: 'A thin lead sheet inscribed with a binding curse (defixio)',
+    value: 100,
+    toolRequired: 'pickaxe',
+    isJunk: false
+  },
+  terracotta_figurine: {
+    id: 'terracotta_figurine',
+    name: 'Terracotta Figurine',
+    description: 'A small clay figure depicting a Roman deity or person',
+    value: 100,
+    toolRequired: 'shovel',
+    isJunk: false
+  },
+  sestertius_coin: {
+    id: 'sestertius_coin',
+    name: 'Sestertius Coin',
+    description: 'A large bronze coin used for everyday Roman transactions',
+    value: 100,
+    toolRequired: 'pickaxe',
+    isJunk: false
+  },
+  roman_glass_vessel: {
+    id: 'roman_glass_vessel',
+    name: 'Roman Glass Vessel',
+    description: 'A delicate blown glass container with iridescent patina',
+    value: 100,
+    toolRequired: 'pickaxe',
+    isJunk: false
+  },
+  pilum_tip: {
+    id: 'pilum_tip',
+    name: 'Pilum Tip',
+    description: 'The iron head of a Roman javelin designed to bend on impact',
+    value: 100,
+    toolRequired: 'pickaxe',
+    isJunk: false
+  },
+  tegula_legion_stamp: {
+    id: 'tegula_legion_stamp',
+    name: 'Tegula with Legion Stamp',
+    description: 'A roof tile stamped with the mark of a Roman legion',
+    value: 100,
+    toolRequired: 'shovel',
+    isJunk: false
+  },
+
+  // Junk artifacts ($0-10 each)
+  roof_tile_fragment: {
+    id: 'roof_tile_fragment',
+    name: 'Roof Tile Fragment',
+    description: 'A broken piece of terracotta roof tile',
+    value: 4,
+    toolRequired: 'shovel',
+    isJunk: true
+  },
+  iron_slag: {
+    id: 'iron_slag',
+    name: 'Iron Slag',
+    description: 'Waste material from ancient metalworking',
+    value: 3,
+    toolRequired: 'pickaxe',
+    isJunk: true
+  },
+  charcoal_remnants: {
+    id: 'charcoal_remnants',
+    name: 'Charcoal Remnants',
+    description: 'Carbonized wood fragments from an ancient hearth',
+    value: 2,
+    toolRequired: 'shovel',
+    isJunk: true
   }
 };
 
@@ -146,8 +240,16 @@ const TOOL_UNLOCKS = {
 
 // Tool to artifacts mapping (for quick lookup)
 const TOOL_ARTIFACT_MAP = {
-  shovel: ['amphora', 'oil_lamp', 'votive_statue', 'corroded_nail', 'animal_bone'],
-  pickaxe: ['mosaic_tile', 'fresco_fragment', 'stone_fragment'],
+  shovel: [
+    'amphora', 'oil_lamp', 'votive_statue', 'corroded_nail', 'animal_bone',
+    'bronze_speculum', 'garum_amphora', 'terracotta_figurine', 'tegula_legion_stamp',
+    'roof_tile_fragment', 'charcoal_remnants'
+  ],
+  pickaxe: [
+    'mosaic_tile', 'fresco_fragment', 'stone_fragment',
+    'lead_curse_tablet', 'sestertius_coin', 'roman_glass_vessel', 'pilum_tip',
+    'iron_slag'
+  ],
   brush: ['denarius_coin', 'signet_ring', 'fibula', 'broken_pottery'],
   hammer_chisel: ['strigil', 'gladius_pommel', 'weathered_brick']
 };
@@ -260,7 +362,7 @@ function isValidSaveData(data) {
   if (!data.level || typeof data.level !== 'object') {
     return false;
   }
-  if (typeof data.level.number !== 'number' || data.level.number < 1 || data.level.number > 10) {
+  if (typeof data.level.number !== 'number' || data.level.number < 1 || data.level.number > 5) {
     return false;
   }
 

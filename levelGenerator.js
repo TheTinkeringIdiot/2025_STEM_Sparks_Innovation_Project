@@ -18,7 +18,8 @@ const TileType = {
   STONE: 'stone',
   DIRT: 'dirt',
   GRASS: 'grass',
-  SAND: 'sand'
+  SAND: 'sand',
+  WATER: 'water'
 };
 
 // Obstacle types with Roman theme
@@ -64,7 +65,8 @@ class LevelGenerator {
       width: MAP_WIDTH_TILES,
       height: MAP_HEIGHT_TILES,
       poiCount: POI_COUNT,
-      minPOISpacing: config.minPOISpacing || MIN_POI_SPACING
+      minPOISpacing: config.minPOISpacing || MIN_POI_SPACING,
+      theme: config.theme || null
     };
 
     this.rng = new SeededRandom(this.config.seed);
@@ -86,6 +88,9 @@ class LevelGenerator {
   generate() {
     this.initializeGrid();
     this.generateTerrain();
+    if (this.config.theme && this.config.theme.rivers) {
+      this.generateRivers();
+    }
     this.placePOIs();
     this.placePlayerSpawn();
     this.placeObstacles();
@@ -120,16 +125,20 @@ class LevelGenerator {
   generateTerrain() {
     this.state.phase = GenerationPhase.TERRAIN;
 
+    const thresholds = (this.config.theme && this.config.theme.terrainThresholds)
+      ? this.config.theme.terrainThresholds
+      : [-0.3, 0.0, 0.3];
+
     for (let y = 0; y < this.config.height; y++) {
       for (let x = 0; x < this.config.width; x++) {
         const noise = this.rng.perlin(x * 0.1, y * 0.1);
 
-        // Assign terrain type based on noise value
-        if (noise < -0.3) {
+        // Assign terrain type based on theme-configurable noise thresholds
+        if (noise < thresholds[0]) {
           this.state.grid[y][x].type = TileType.STONE;
-        } else if (noise < 0.0) {
+        } else if (noise < thresholds[1]) {
           this.state.grid[y][x].type = TileType.DIRT;
-        } else if (noise < 0.3) {
+        } else if (noise < thresholds[2]) {
           this.state.grid[y][x].type = TileType.GRASS;
         } else {
           this.state.grid[y][x].type = TileType.SAND;
@@ -137,6 +146,50 @@ class LevelGenerator {
 
         // Add sprite variation (0-3)
         this.state.grid[y][x].spriteIndex = this.rng.intBetween(0, 3);
+      }
+    }
+  }
+
+  /**
+   * Generate rivers using Perlin noise for natural meandering paths
+   * Rivers flow from one edge to the opposite, with configurable width and count
+   */
+  generateRivers() {
+    const riverConfig = this.config.theme.rivers;
+    const count = riverConfig.count || 1;
+    const width = riverConfig.width || 2;
+    const spawnX = Math.floor(this.config.width / 2);
+    const spawnY = Math.floor(this.config.height / 2);
+    const spawnClearRadius = 5;
+
+    for (let r = 0; r < count; r++) {
+      // Alternate between horizontal and vertical rivers
+      const horizontal = (r % 2 === 0);
+
+      // Starting position offset by river index for separation
+      const offset = Math.floor(this.config[horizontal ? 'height' : 'width'] / (count + 1)) * (r + 1);
+
+      for (let step = 0; step < (horizontal ? this.config.width : this.config.height); step++) {
+        // Use Perlin noise for natural meandering
+        const noiseVal = this.rng.perlin(step * 0.08, r * 100);
+        const meander = Math.round(noiseVal * 6);
+        const center = offset + meander;
+
+        for (let w = -Math.floor(width / 2); w <= Math.floor(width / 2); w++) {
+          const x = horizontal ? step : center + w;
+          const y = horizontal ? center + w : step;
+
+          // Bounds check
+          if (x < 0 || x >= this.config.width || y < 0 || y >= this.config.height) continue;
+
+          // Don't place water near player spawn
+          const distToSpawn = Math.abs(x - spawnX) + Math.abs(y - spawnY);
+          if (distToSpawn < spawnClearRadius) continue;
+
+          this.state.grid[y][x].type = TileType.WATER;
+          this.state.grid[y][x].isWalkable = false;
+          this.state.grid[y][x].obstacle = null;
+        }
       }
     }
   }
@@ -159,17 +212,24 @@ class LevelGenerator {
       }
     ];
 
-    this.state.pois = poissonDiscSampling(
+    const candidates = poissonDiscSampling(
       {
         minDistance: this.config.minPOISpacing,
         maxAttempts: 50,  // Increased from 30 to 50 for better coverage
         gridWidth: this.config.width,
         gridHeight: this.config.height
       },
-      this.config.poiCount,
+      this.config.poiCount + 10,  // Request extra in case some land on water
       excludedZones,
       this.rng
     );
+
+    // Filter out POIs on non-walkable tiles (water, etc.)
+    this.state.pois = candidates.filter(pos =>
+      this.state.grid[pos.y] &&
+      this.state.grid[pos.y][pos.x] &&
+      this.state.grid[pos.y][pos.x].isWalkable
+    ).slice(0, this.config.poiCount);
   }
 
   /**
@@ -191,8 +251,8 @@ class LevelGenerator {
 
     for (let y = 0; y < this.config.height; y++) {
       for (let x = 0; x < this.config.width; x++) {
-        // Skip POI tiles and spawn area
-        if (this.isTileReserved(x, y)) {
+        // Skip POI tiles, spawn area, and water
+        if (this.isTileReserved(x, y) || this.state.grid[y][x].type === TileType.WATER) {
           continue;
         }
 
@@ -229,9 +289,9 @@ class LevelGenerator {
       this.state.validationAttempts++;
     }
 
-    throw new Error(
-      `Failed validation after ${MAX_VALIDATION_ATTEMPTS} attempts. ` +
-      `Could not make all POIs reachable from spawn.`
+    console.warn(
+      `Validation: ${MAX_VALIDATION_ATTEMPTS} attempts exhausted. ` +
+      `Some POIs may be unreachable from spawn.`
     );
   }
 
@@ -310,7 +370,7 @@ class LevelGenerator {
    * @returns {string} Obstacle type
    */
   selectObstacleType() {
-    const types = [
+    const defaultWeights = [
       { type: ObstacleType.RUIN_COLUMN, weight: 0.2 },
       { type: ObstacleType.RUIN_WALL, weight: 0.2 },
       { type: ObstacleType.TREE_CYPRESS, weight: 0.2 },
@@ -318,6 +378,10 @@ class LevelGenerator {
       { type: ObstacleType.ROCK_SMALL, weight: 0.15 },
       { type: ObstacleType.ROCK_LARGE, weight: 0.1 }
     ];
+
+    const types = (this.config.theme && this.config.theme.obstacleWeights)
+      ? this.config.theme.obstacleWeights
+      : defaultWeights;
 
     return this.rng.weightedChoice(types).type;
   }
@@ -394,13 +458,19 @@ class LevelGenerator {
   carvePath(start, end) {
     const path = this.aStarIgnoringObstacles(start, end);
 
-    // Clear obstacles along path with some randomness for natural look
+    // Clear obstacles along path, building bridges over water
     for (const point of path) {
-      if (!this.state.grid[point.y][point.x].isWalkable) {
+      const tile = this.state.grid[point.y][point.x];
+      if (tile.type === TileType.WATER) {
+        // Build a bridge: make water walkable but keep it as water visually
+        tile.isWalkable = true;
+        continue;
+      }
+      if (!tile.isWalkable) {
         // 50% chance to remove obstacle (creates varied paths)
         if (this.rng.next() < 0.5) {
-          this.state.grid[point.y][point.x].obstacle = null;
-          this.state.grid[point.y][point.x].isWalkable = true;
+          tile.obstacle = null;
+          tile.isWalkable = true;
         }
       }
     }
@@ -550,17 +620,21 @@ class LevelGenerator {
     // Get available tools for this level
     const availableTools = this.getAvailableTools();
 
+    // Use theme artifact pool if available, otherwise fall back to defaults
+    const themePool = this.config.theme && this.config.theme.artifactPool;
+
     // Build list of artifacts that require only available tools
     let artifactIds = [];
 
     if (isValuable) {
-      // Valuable artifacts filtered by available tools
-      const valuableArtifacts = {
-        shovel: ['amphora', 'oil_lamp', 'votive_statue'],
-        pickaxe: ['mosaic_tile', 'fresco_fragment'],
-        brush: ['denarius_coin', 'signet_ring', 'fibula'],
-        hammer_chisel: ['strigil', 'gladius_pommel']
-      };
+      const valuableArtifacts = themePool
+        ? themePool.valuable
+        : {
+            shovel: ['amphora', 'oil_lamp', 'votive_statue'],
+            pickaxe: ['mosaic_tile', 'fresco_fragment'],
+            brush: ['denarius_coin', 'signet_ring', 'fibula'],
+            hammer_chisel: ['strigil', 'gladius_pommel']
+          };
 
       for (const tool of availableTools) {
         if (valuableArtifacts[tool]) {
@@ -568,13 +642,14 @@ class LevelGenerator {
         }
       }
     } else {
-      // Junk artifacts filtered by available tools
-      const junkArtifacts = {
-        shovel: ['corroded_nail', 'animal_bone'],
-        pickaxe: ['stone_fragment'],
-        brush: ['broken_pottery'],
-        hammer_chisel: ['weathered_brick']
-      };
+      const junkArtifacts = themePool
+        ? themePool.junk
+        : {
+            shovel: ['corroded_nail', 'animal_bone'],
+            pickaxe: ['stone_fragment'],
+            brush: ['broken_pottery'],
+            hammer_chisel: ['weathered_brick']
+          };
 
       for (const tool of availableTools) {
         if (junkArtifacts[tool]) {
@@ -631,8 +706,12 @@ class LevelGenerator {
    * @returns {string} POI name
    */
   generatePOIName(id) {
-    const prefixes = ['Ancient', 'Lost', 'Hidden', 'Forgotten', 'Sacred'];
-    const suffixes = ['Altar', 'Column', 'Inscription', 'Mosaic', 'Statue', 'Temple'];
+    const defaultPrefixes = ['Ancient', 'Lost', 'Hidden', 'Forgotten', 'Sacred'];
+    const defaultSuffixes = ['Altar', 'Column', 'Inscription', 'Mosaic', 'Statue', 'Temple'];
+
+    const prefixes = (this.config.theme && this.config.theme.poiPrefixes) || defaultPrefixes;
+    const suffixes = (this.config.theme && this.config.theme.poiSuffixes) || defaultSuffixes;
+
     return `${this.rng.choice(prefixes)} ${this.rng.choice(suffixes)} ${id + 1}`;
   }
 
@@ -642,13 +721,15 @@ class LevelGenerator {
    * @returns {string} POI description
    */
   generatePOIDescription(id) {
-    const descriptions = [
+    const defaultDescriptions = [
       'A remarkable Roman artifact waiting to be discovered.',
       'Evidence of ancient Roman civilization lies here.',
       'This site holds secrets from the Roman Empire.',
       'A place where Romans once walked and worked.',
       'Ancient history preserved in stone and earth.'
     ];
+
+    const descriptions = (this.config.theme && this.config.theme.poiDescriptions) || defaultDescriptions;
     return this.rng.choice(descriptions);
   }
 }

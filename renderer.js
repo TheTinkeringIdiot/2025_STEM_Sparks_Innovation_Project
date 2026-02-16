@@ -36,6 +36,21 @@ class TileRenderer {
 
     // Track if map has been pre-rendered
     this.isPrerendered = false;
+
+    // Terrain color overrides (optional, per-level theming)
+    this.terrainColorOverrides = null;
+  }
+
+  /**
+   * Set terrain color overrides for per-level theming
+   * Must be called BEFORE prerenderMap()
+   * @param {Object|null} overrides - Object keyed by terrain type with RGB arrays, or null for defaults
+   */
+  setTerrainColorOverrides(overrides) {
+    this.terrainColorOverrides = overrides;
+    // Clear cached tile images so they regenerate with new colors
+    this.tileImages.clear();
+    this.isPrerendered = false;
   }
 
   /**
@@ -43,13 +58,21 @@ class TileRenderer {
    * Creates 4 variants per tile type for visual variety
    */
   generateTileSprites() {
-    const tileTypes = [
-      { name: 'ground', baseColor: [139, 115, 85] },   // Brown
-      { name: 'grass', baseColor: [127, 170, 101] },   // Green
-      { name: 'dirt', baseColor: [155, 118, 83] },     // Tan
-      { name: 'stone', baseColor: [128, 128, 128] },   // Gray
-      { name: 'sand', baseColor: [237, 201, 175] }     // Sandy beige
-    ];
+    const defaultColors = {
+      ground: [139, 115, 85],
+      grass: [127, 170, 101],
+      dirt: [155, 118, 83],
+      stone: [128, 128, 128],
+      sand: [237, 201, 175],
+      water: [60, 120, 190]
+    };
+
+    const tileTypes = ['ground', 'grass', 'dirt', 'stone', 'sand', 'water'].map(name => ({
+      name,
+      baseColor: (this.terrainColorOverrides && this.terrainColorOverrides[name])
+        ? this.terrainColorOverrides[name]
+        : defaultColors[name]
+    }));
 
     const VARIANT_COUNT = 4;
 
@@ -98,8 +121,8 @@ class TileRenderer {
           ctx.fillRect(x, y, dotSize, dotSize);
         }
 
-        // Add terrain-specific details
-        this.addTerrainDetails(ctx, type.name, seededRand);
+        // Add terrain-specific details (pass base color for theme-aware detail rendering)
+        this.addTerrainDetails(ctx, type.name, seededRand, [r, g, b]);
 
         this.tileImages.set(`${type.name}_${variant}`, canvas);
       }
@@ -108,15 +131,26 @@ class TileRenderer {
 
   /**
    * Add terrain-specific visual details
+   * Colors are derived from the tile's base color so themed terrains look natural
    * @param {CanvasRenderingContext2D} ctx - Canvas context
    * @param {string} terrainType - Type of terrain
    * @param {function} rand - Seeded random function
+   * @param {number[]} baseColor - RGB base color of this tile variant
    */
-  addTerrainDetails(ctx, terrainType, rand) {
+  addTerrainDetails(ctx, terrainType, rand, baseColor) {
+    // Derive detail colors from base: darker shade for accents
+    const dr = Math.max(0, baseColor[0] - 40);
+    const dg = Math.max(0, baseColor[1] - 40);
+    const db = Math.max(0, baseColor[2] - 40);
+    // Lighter shade for ripple/highlight effects
+    const lr = Math.min(255, baseColor[0] + 20);
+    const lg = Math.min(255, baseColor[1] + 20);
+    const lb = Math.min(255, baseColor[2] + 20);
+
     switch (terrainType) {
       case 'grass':
-        // Small grass blade hints
-        ctx.fillStyle = 'rgba(60, 120, 50, 0.3)';
+        // Small blade/scrub hints in a darker shade of the base
+        ctx.fillStyle = `rgba(${dr}, ${dg}, ${db}, 0.3)`;
         for (let i = 0; i < 6; i++) {
           const x = Math.floor(rand() * this.tileSize);
           const y = Math.floor(rand() * this.tileSize);
@@ -137,8 +171,8 @@ class TileRenderer {
         break;
 
       case 'sand':
-        // Wind ripple hints
-        ctx.strokeStyle = 'rgba(200, 170, 140, 0.2)';
+        // Wind ripple hints in a lighter shade of the base
+        ctx.strokeStyle = `rgba(${lr}, ${lg}, ${lb}, 0.25)`;
         ctx.lineWidth = 1;
         for (let i = 0; i < 2; i++) {
           const y = 10 + rand() * 20;
@@ -150,14 +184,37 @@ class TileRenderer {
         break;
 
       case 'dirt':
-        // Small pebbles
-        ctx.fillStyle = 'rgba(80, 60, 40, 0.25)';
+        // Small pebbles in a darker shade of the base
+        ctx.fillStyle = `rgba(${dr}, ${dg}, ${db}, 0.25)`;
         for (let i = 0; i < 3; i++) {
           const x = Math.floor(rand() * this.tileSize);
           const y = Math.floor(rand() * this.tileSize);
           ctx.beginPath();
           ctx.arc(x, y, 1 + rand(), 0, Math.PI * 2);
           ctx.fill();
+        }
+        break;
+
+      case 'water':
+        // Wave highlights
+        ctx.strokeStyle = `rgba(${lr}, ${lg}, ${lb}, 0.35)`;
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 3; i++) {
+          const y = 8 + i * 10 + rand() * 4;
+          ctx.beginPath();
+          ctx.moveTo(2, y);
+          ctx.quadraticCurveTo(10, y - 2, 20, y);
+          ctx.quadraticCurveTo(30, y + 2, 38, y);
+          ctx.stroke();
+        }
+        // Subtle darker ripple
+        ctx.strokeStyle = `rgba(${dr}, ${dg}, ${db}, 0.2)`;
+        for (let i = 0; i < 2; i++) {
+          const y = 14 + i * 12 + rand() * 3;
+          ctx.beginPath();
+          ctx.moveTo(5, y);
+          ctx.quadraticCurveTo(20, y + 1.5, 35, y);
+          ctx.stroke();
         }
         break;
     }
@@ -438,10 +495,10 @@ class TileRenderer {
    * @param {string} terrainType - Type of terrain
    * @returns {Array} Array of decoration names valid for this terrain
    */
-  getDecorationsForTerrain(terrainType) {
+  getDecorationsForTerrain(terrainType, excludeList) {
     const valid = [];
     this.decorationImages.forEach((data, name) => {
-      if (data.terrain.includes(terrainType)) {
+      if (data.terrain.includes(terrainType) && !(excludeList && excludeList.includes(name))) {
         valid.push(name);
       }
     });
@@ -467,12 +524,18 @@ class TileRenderer {
    * @returns {number[]} RGB array
    */
   getTerrainColor(terrainType) {
+    // Check overrides first
+    if (this.terrainColorOverrides && this.terrainColorOverrides[terrainType]) {
+      return this.terrainColorOverrides[terrainType];
+    }
+
     const colors = {
       ground: [139, 115, 85],
       grass: [127, 170, 101],
       dirt: [155, 118, 83],
       stone: [128, 128, 128],
-      sand: [237, 201, 175]
+      sand: [237, 201, 175],
+      water: [60, 120, 190]
     };
     return colors[terrainType] || colors.grass;
   }
@@ -666,8 +729,8 @@ class TileRenderer {
    * @param {number} y - Pixel Y position
    * @param {function} rand - Seeded random function
    */
-  drawDecoration(terrainType, x, y, rand) {
-    const validDecorations = this.getDecorationsForTerrain(terrainType);
+  drawDecoration(terrainType, x, y, rand, excludeDecorations) {
+    const validDecorations = this.getDecorationsForTerrain(terrainType, excludeDecorations);
     if (validDecorations.length === 0) return;
 
     const decorationName = validDecorations[Math.floor(rand() * validDecorations.length)];
@@ -693,7 +756,7 @@ class TileRenderer {
    * Called once per level load - tiles don't redraw every frame
    * @param {Array<Array<Object>>} tileMap - 2D array of tile data
    */
-  prerenderMap(tileMap) {
+  prerenderMap(tileMap, options) {
     // Generate sprites if not already created
     if (this.tileImages.size === 0) {
       this.generateTileSprites();
@@ -704,6 +767,11 @@ class TileRenderer {
     if (this.decorationImages.size === 0) {
       this.generateDecorationSprites();
     }
+
+    const decorationChance = (options && options.decorationChance !== undefined)
+      ? options.decorationChance
+      : 0.15;
+    const excludeDecorations = (options && options.excludeDecorations) || null;
 
     // Create seeded random for reproducible decoration placement
     const seed = tileMap.length * tileMap[0].length;
@@ -741,9 +809,9 @@ class TileRenderer {
         // Apply edge/corner blending with neighboring terrain types
         this.applyTerrainBlending(tileMap, row, col, x, y);
 
-        // Scatter decorations on some tiles (15% chance, skip tiles with obstacles)
-        if (!tile.obstacle && seededRand() < 0.15) {
-          this.drawDecoration(tile.type, x, y, seededRand);
+        // Scatter decorations on some tiles (theme-configurable chance, skip tiles with obstacles)
+        if (!tile.obstacle && seededRand() < decorationChance) {
+          this.drawDecoration(tile.type, x, y, seededRand, excludeDecorations);
         }
 
         // Draw obstacle if present

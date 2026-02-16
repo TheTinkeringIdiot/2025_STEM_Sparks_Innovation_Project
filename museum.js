@@ -374,7 +374,19 @@ class Museum {
       corroded_nail: '🔩',
       stone_fragment: '🪨',
       animal_bone: '🦴',
-      weathered_brick: '🧱'
+      weathered_brick: '🧱',
+      // Level 2 artifacts
+      bronze_speculum: '🪞',
+      garum_amphora: '🏺',
+      lead_curse_tablet: '📜',
+      terracotta_figurine: '🗿',
+      sestertius_coin: '🪙',
+      roman_glass_vessel: '🫗',
+      pilum_tip: '🔱',
+      tegula_legion_stamp: '🧱',
+      roof_tile_fragment: '🧱',
+      iron_slag: '⚫',
+      charcoal_remnants: '⚫'
     };
 
     return emojiMap[artifact.id] || '❓';

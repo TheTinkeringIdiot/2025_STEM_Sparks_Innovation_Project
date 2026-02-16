@@ -27,6 +27,7 @@
 
     <!-- State management -->
     <script src="gameState.js"></script>
+    <script src="levelThemes.js"></script>
 
     <!-- Rendering systems -->
     <script src="canvasManager.js"></script>
@@ -54,6 +55,9 @@
     <script src="levelProgression.js"></script>
     <script src="tutorial.js"></script>
 
+    <!-- UI screens -->
+    <script src="titleScreen.js"></script>
+
     <!-- Main game loop -->
     <script src="game.js"></script>
 
@@ -72,17 +76,32 @@
             });
         })();
 
-        // Start the game
+        // Start the game with title screen flow
         (function startGame() {
             try {
                 console.log('Initializing archeology game...');
                 const game = new Game();
                 game.initialize();
-                game.start();
+
+                // Create title screen with island selection
+                const titleScreen = new TitleScreen((islandNumber) => {
+                    game.loadLevel(islandNumber);
+                    game.start();
+                });
+
+                // Wire up return-to-map after level complete
+                game.onReturnToMap = () => {
+                    game.stop();
+                    titleScreen.showIslandMap();
+                };
+
+                // Show title screen instead of auto-starting
+                titleScreen.showTitle();
 
                 // Make game instance available globally for debugging
                 window.game = game;
-                console.log('Game started successfully!');
+                window.titleScreen = titleScreen;
+                console.log('Game initialized, showing title screen');
             } catch (error) {
                 console.error('Failed to start game:', error);
                 alert('Failed to start game. Check console for details: ' + error.message);

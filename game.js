@@ -126,9 +126,6 @@ class Game {
     };
 
     console.log('Game systems initialized');
-
-    // Load the first level
-    this.loadLevel(1);
   }
 
   /**
@@ -477,7 +474,10 @@ class Game {
     // Reset level completion state
     this.isLevelComplete = false;
 
-    // 1. Generate level using LevelGenerator
+    // Get theme config for this level
+    const theme = getLevelTheme(levelNumber);
+
+    // 1. Generate level using LevelGenerator with theme
     const levelConfig = {
       seed: levelNumber,
       levelNumber: levelNumber,  // Pass level number for tool-appropriate artifact assignment
@@ -486,7 +486,7 @@ class Game {
       poiCount: 15,
       minPOISpacing: 10,  // 10 tiles spacing (400px) for better distribution across map
       obstacleDensity: 0.3,
-      theme: 'roman'
+      theme: theme
     };
 
     const levelGenerator = new LevelGenerator(levelConfig);
@@ -509,9 +509,13 @@ class Game {
     }));
     this.minimap.setPOIs(minimapPOIs);
 
-    // 2. Pre-render map to background layer
+    // 2. Apply terrain color overrides and pre-render map
+    this.tileRenderer.setTerrainColorOverrides(theme.terrainColorOverrides || null);
     const backgroundLayer = this.canvasManager.getLayer('background');
-    this.tileRenderer.prerenderMap(level.grid);
+    this.tileRenderer.prerenderMap(level.grid, {
+      decorationChance: theme.decorationChance || 0.15,
+      excludeDecorations: theme.excludeDecorations || null
+    });
     this.tileRenderer.renderVisible(backgroundLayer.context, this.camera);
 
     // 3. Set player spawn position
@@ -582,7 +586,7 @@ class Game {
    * Callback when player continues from museum to next level
    */
   onContinueToNextLevel() {
-    console.log('Continuing to next level...');
+    console.log('Returning to island map...');
 
     // Clear collected artifacts for next level
     this.gameState.player.artifacts = [];
@@ -590,9 +594,10 @@ class Game {
     // Reset level completion state
     this.isLevelComplete = false;
 
-    // Load next level (cap at level 10)
-    const nextLevel = Math.min(this.gameState.level.number + 1, 10);
-    this.loadLevel(nextLevel);
+    // Show island map for level selection (set by startup code)
+    if (this.onReturnToMap) {
+      this.onReturnToMap();
+    }
   }
 
   /**

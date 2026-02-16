@@ -158,6 +158,119 @@ const ARTIFACT_INFO = {
     historicalContext: 'Romans perfected brick-making on an industrial scale. Standardized bricks built everything from humble houses to the Pantheon. Stamps on bricks often recorded the manufacturer, date, and imperial authority.',
     archaeologicalSignificance: 'Brick stamps are valuable dating tools—some record the exact year of production. Brick dimensions and compositions vary by region and period, helping identify construction phases.',
     funFact: 'The Romans made so many bricks that brick stamps form a continuous chronological record. Emperor Diocletian reorganized the brick industry, and we can track his reforms through changing stamp formats!'
+  },
+
+  // === Level 2 Artifacts: Roman Villa & Forum ===
+
+  bronze_speculum: {
+    name: 'Bronze Speculum',
+    icon: '🪞',
+    period: '1st - 4th century CE',
+    origin: 'Roman Domestic Life',
+    description: 'A polished bronze hand mirror with a decorated handle, used daily by Roman men and women.',
+    historicalContext: 'Romans valued personal appearance highly. Both men and women used mirrors for grooming. Bronze mirrors were common; wealthier citizens owned silver or silver-plated versions. The reflective surface was created by polishing the metal to a high shine.',
+    archaeologicalSignificance: 'Mirrors reveal Roman beauty standards and daily routines. Decorated handles show popular artistic motifs. Their widespread distribution demonstrates that personal grooming was important across social classes.',
+    funFact: 'Glass mirrors backed with lead did exist in Roman times, but they produced poor reflections. Most Romans preferred the clearer image from polished bronze!'
+  },
+  garum_amphora: {
+    name: 'Garum Amphora',
+    icon: '🏺',
+    period: '3rd century BCE - 5th century CE',
+    origin: 'Mediterranean Fish Sauce Industry',
+    description: 'A sealed vessel that once contained garum, the fermented fish sauce Romans used in nearly every dish.',
+    historicalContext: 'Garum was the ketchup of the Roman world. Made by fermenting fish intestines and blood in the sun for months, this pungent sauce was added to almost everything. The finest garum from Pompeii cost more per liter than perfume.',
+    archaeologicalSignificance: 'Garum amphorae are found across the Roman world, revealing the massive scale of fish sauce production and trade. Residue analysis can identify the fish species used and the sauce quality.',
+    funFact: 'Despite sounding unappetizing, garum is essentially the ancestor of modern Worcestershire sauce and Asian fish sauces like nam pla!'
+  },
+  lead_curse_tablet: {
+    name: 'Lead Curse Tablet (Defixio)',
+    icon: '📜',
+    period: '5th century BCE - 5th century CE',
+    origin: 'Greco-Roman Magic Practices',
+    description: 'A thin lead sheet inscribed with a curse intended to bind or harm an enemy through supernatural means.',
+    historicalContext: 'Romans regularly used curse tablets to seek revenge, win lawsuits, or sabotage rivals. The inscriber would scratch the curse onto lead, fold it, pierce it with a nail, and deposit it in graves, wells, or temple precincts to reach the underworld gods.',
+    archaeologicalSignificance: 'Curse tablets reveal everyday anxieties and conflicts that official records ignore. They document personal names, occupations, and social relationships while providing direct evidence of popular magical beliefs.',
+    funFact: 'Over 1,600 curse tablets have been found. Common curses targeted chariot race opponents, legal adversaries, and love rivals. One tablet from Bath, England curses a thief who stole a bathing towel!'
+  },
+  terracotta_figurine: {
+    name: 'Terracotta Figurine',
+    icon: '🗿',
+    period: '3rd century BCE - 4th century CE',
+    origin: 'Roman Religious & Domestic Contexts',
+    description: 'A small fired clay figure depicting a deity, person, or animal, used as a votive offering or household decoration.',
+    historicalContext: 'Mass-produced from molds, terracotta figurines were affordable religious objects for common people. They depicted gods, goddesses, actors, animals, and everyday people. Households placed them in home shrines (lararia) for daily worship.',
+    archaeologicalSignificance: 'Figurine types reveal popular religious devotion at a local level. Production centers and distribution patterns show economic networks. Mold similarities connect workshops across regions.',
+    funFact: 'Roman children played with terracotta dolls that had movable arms and legs, attached with pins. Some have been found with tiny terracotta furniture and accessories!'
+  },
+  sestertius_coin: {
+    name: 'Sestertius Coin',
+    icon: '🪙',
+    period: '3rd century BCE - 3rd century CE',
+    origin: 'Roman Imperial Mint',
+    description: 'A large bronze coin that was the standard unit of Roman accounting, worth one quarter of a denarius.',
+    historicalContext: 'The sestertius was the coin most Romans handled daily. Prices in markets and rents were quoted in sestertii. Its large size allowed detailed portraits and elaborate reverse designs celebrating imperial achievements, buildings, and gods.',
+    archaeologicalSignificance: 'Sestertii provide a rich visual record of Roman propaganda. Reverse designs show now-destroyed buildings, military victories, and political messages. Wear patterns indicate circulation duration.',
+    funFact: 'The abbreviation HS for sestertius (from the old form IIS, two-and-a-half asses) is sometimes cited as an ancestor of the dollar sign $, though the exact connection is debated by scholars!'
+  },
+  roman_glass_vessel: {
+    name: 'Roman Glass Vessel',
+    icon: '🫗',
+    period: '1st century BCE - 5th century CE',
+    origin: 'Roman Glassblowing Industry',
+    description: 'A delicate blown glass container displaying the iridescent patina of centuries of burial.',
+    historicalContext: 'The invention of glassblowing around 50 BCE revolutionized Roman industry. What was once a luxury became affordable for ordinary people. Roman glass came in every color and form: bottles, cups, plates, and decorative pieces.',
+    archaeologicalSignificance: 'Roman glass demonstrates technological innovation and trade networks. Chemical analysis of glass composition can identify production centers. The iridescent weathering layer (patina) actually results from centuries of chemical interaction with soil.',
+    funFact: 'Romans invented the first cage cups (diatreta) -- glass vessels with an outer decorative cage cut from a single thick blank. Only about 50 fragments survive, making them among the rarest ancient artifacts!'
+  },
+  pilum_tip: {
+    name: 'Pilum Tip',
+    icon: '🔱',
+    period: '4th century BCE - 5th century CE',
+    origin: 'Roman Military Equipment',
+    description: 'The pyramidal iron head of a Roman javelin (pilum), designed to bend upon impact to disable enemy shields.',
+    historicalContext: 'Every Roman legionary carried two pila. Before close combat, soldiers hurled these heavy javelins at the enemy. The soft iron shank would bend on impact, making the javelin impossible to throw back and weighing down the enemy shield.',
+    archaeologicalSignificance: 'Pilum finds mark military camps, battle sites, and garrison locations. Design variations track tactical changes across centuries. Distribution maps reveal the extent of Roman military operations.',
+    funFact: 'Julius Caesar reportedly ordered his soldiers to modify their pila before the Battle of Pharsalus so the shanks would bend more easily, making them even more effective against Pompey\'s troops!'
+  },
+  tegula_legion_stamp: {
+    name: 'Tegula with Legion Stamp',
+    icon: '🧱',
+    period: '1st - 4th century CE',
+    origin: 'Roman Military & Civilian Construction',
+    description: 'A large flat roof tile bearing the impressed stamp of the Roman legion that manufactured it.',
+    historicalContext: 'Roman legions produced their own building materials when stationed in permanent camps. Tiles were stamped with the legion number and sometimes the date and commanding officer. Civilian tile works also stamped their products for quality control.',
+    archaeologicalSignificance: 'Legion-stamped tiles are invaluable for identifying which military units were stationed where and when. They reveal the extent of military involvement in construction and the organization of Roman supply chains.',
+    funFact: 'Roman soldiers did not just fight wars. Legionaries built roads, bridges, aqueducts, and entire cities. A legionary spent more time with a trowel than a sword!'
+  },
+  roof_tile_fragment: {
+    name: 'Roof Tile Fragment',
+    icon: '🧱',
+    period: 'Various',
+    origin: 'Roman Construction',
+    description: 'A broken piece of terracotta roof tile, common debris from collapsed Roman buildings.',
+    historicalContext: 'Roman roofs used two types of tiles: flat tegulae and curved imbrices. These interlocking tiles created a waterproof surface that lasted centuries. Broken tiles were often reused as building fill or floor material.',
+    archaeologicalSignificance: 'Tile fragments indicate the presence of Roman-style buildings. Fabric analysis reveals local clay sources and production methods. Thick accumulations of tile mark collapsed roofs.',
+    funFact: 'Romans sometimes wrote graffiti on wet tiles before firing. Messages range from workers counting production to love notes and rude comments about supervisors!'
+  },
+  iron_slag: {
+    name: 'Iron Slag',
+    icon: '⚫',
+    period: 'Iron Age onward',
+    origin: 'Metalworking & Smithing',
+    description: 'Glassy waste material produced during iron smelting or smithing operations.',
+    historicalContext: 'Every Roman settlement needed blacksmiths to produce and repair tools, weapons, nails, and household items. The smelting and forging process produced large quantities of slag that accumulated near workshops.',
+    archaeologicalSignificance: 'Slag deposits indicate industrial zones within settlements. Chemical analysis reveals smelting temperatures and ore sources. The quantity of slag helps estimate production scale.',
+    funFact: 'Roman ironworkers could achieve temperatures over 1200 degrees Celsius in their furnaces. Some slag contains tiny droplets of iron that never made it into the final product!'
+  },
+  charcoal_remnants: {
+    name: 'Charcoal Remnants',
+    icon: '⚫',
+    period: 'All periods',
+    origin: 'Cooking & Heating',
+    description: 'Carbonized wood fragments from a Roman hearth, hypocaust, or cooking fire.',
+    historicalContext: 'Wood and charcoal were the primary fuels of the Roman world. Cooking, heating baths, firing pottery, and smelting metal all required enormous quantities of fuel. Deforestation around major cities was a real environmental consequence.',
+    archaeologicalSignificance: 'Charcoal fragments can be identified to tree species, revealing ancient woodland composition and fuel preferences. Radiocarbon dating of charcoal provides absolute dates for archaeological layers.',
+    funFact: 'Romans burned so much wood heating their baths that some towns had officials specifically tasked with managing fuel supplies. The baths of Caracalla in Rome required an estimated 10 tons of wood per day!'
   }
 };
 
