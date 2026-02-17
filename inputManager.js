@@ -33,6 +33,9 @@ class InputManager {
       }
     };
 
+    // One-shot number key presses (consumed after reading)
+    this.numberKeyPressed = null;
+
     this.attachListeners();
   }
 
@@ -89,6 +92,11 @@ class InputManager {
       case 'i':
         this.state.keys.i = true;
         break;
+    }
+
+    // Number keys 1-6 for tool selection (one-shot)
+    if (event.key >= '1' && event.key <= '6') {
+      this.numberKeyPressed = parseInt(event.key);
     }
   }
 
@@ -150,6 +158,16 @@ class InputManager {
     const rect = this.canvas.getBoundingClientRect();
     this.state.mouse.x = event.clientX - rect.left;
     this.state.mouse.y = event.clientY - rect.top;
+  }
+
+  /**
+   * Consume and return any pending number key press (1-6)
+   * @returns {number|null} The number key pressed, or null
+   */
+  consumeNumberKey() {
+    const key = this.numberKeyPressed;
+    this.numberKeyPressed = null;
+    return key;
   }
 
   /**

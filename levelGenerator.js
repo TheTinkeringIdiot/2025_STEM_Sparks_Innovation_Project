@@ -189,8 +189,35 @@ class LevelGenerator {
           this.state.grid[y][x].type = TileType.WATER;
           this.state.grid[y][x].isWalkable = false;
           this.state.grid[y][x].obstacle = null;
+          // Tag flow direction: horizontal rivers flow right, vertical flow down
+          this.state.grid[y][x].flowDirection = horizontal ? { x: 1, y: 0 } : { x: 0, y: 1 };
         }
       }
+    }
+
+    // Add 1-tile sand border around all water tiles
+    const sandTiles = [];
+    for (let y = 0; y < this.config.height; y++) {
+      for (let x = 0; x < this.config.width; x++) {
+        if (this.state.grid[y][x].type !== TileType.WATER) continue;
+        // Check 4 neighbors
+        const neighbors = [
+          { nx: x + 1, ny: y },
+          { nx: x - 1, ny: y },
+          { nx: x, ny: y + 1 },
+          { nx: x, ny: y - 1 }
+        ];
+        for (const { nx, ny } of neighbors) {
+          if (nx < 0 || nx >= this.config.width || ny < 0 || ny >= this.config.height) continue;
+          const neighbor = this.state.grid[ny][nx];
+          if (neighbor.type !== TileType.WATER && neighbor.type !== TileType.SAND) {
+            sandTiles.push({ x: nx, y: ny });
+          }
+        }
+      }
+    }
+    for (const { x, y } of sandTiles) {
+      this.state.grid[y][x].type = TileType.SAND;
     }
   }
 

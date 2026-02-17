@@ -221,6 +221,156 @@ const ARTIFACT_CATALOG = {
     value: 2,
     toolRequired: 'shovel',
     isJunk: true
+  },
+
+  // === Level 4 Artifacts: Volcanic Ruins (Pompeii-style) ===
+
+  // Valuable artifacts ($100 each)
+  plaster_body_cast: {
+    id: 'plaster_body_cast',
+    name: 'Plaster Body Cast',
+    description: 'A haunting plaster cast of a Pompeii victim preserved in volcanic ash',
+    value: 100,
+    toolRequired: 'shovel',
+    isJunk: false
+  },
+  carbonized_bread: {
+    id: 'carbonized_bread',
+    name: 'Carbonized Bread Loaf',
+    description: 'A loaf of bread perfectly preserved by volcanic heat',
+    value: 100,
+    toolRequired: 'shovel',
+    isJunk: false
+  },
+  thermopolium_pot: {
+    id: 'thermopolium_pot',
+    name: 'Thermopolium Pot',
+    description: 'A terracotta cooking vessel from a Roman fast-food counter',
+    value: 100,
+    toolRequired: 'shovel',
+    isJunk: false
+  },
+  garden_fresco_panel: {
+    id: 'garden_fresco_panel',
+    name: 'Garden Fresco Panel',
+    description: 'A vibrant wall painting depicting a lush Roman garden scene',
+    value: 100,
+    toolRequired: 'shovel',
+    isJunk: false
+  },
+  marble_venus_statue: {
+    id: 'marble_venus_statue',
+    name: 'Marble Venus Statue',
+    description: 'A small marble statuette of the goddess Venus',
+    value: 100,
+    toolRequired: 'pickaxe',
+    isJunk: false
+  },
+  lararium_shrine: {
+    id: 'lararium_shrine',
+    name: 'Lararium Shrine',
+    description: 'A household shrine for worshipping protective spirits',
+    value: 100,
+    toolRequired: 'pickaxe',
+    isJunk: false
+  },
+  volcanic_glass_cameo: {
+    id: 'volcanic_glass_cameo',
+    name: 'Volcanic Glass Cameo',
+    description: 'A carved obsidian portrait cameo of remarkable detail',
+    value: 100,
+    toolRequired: 'pickaxe',
+    isJunk: false
+  },
+  gold_bulla_amulet: {
+    id: 'gold_bulla_amulet',
+    name: 'Gold Bulla Amulet',
+    description: 'A gold locket worn by freeborn Roman children for protection',
+    value: 100,
+    toolRequired: 'brush',
+    isJunk: false
+  },
+  ivory_dice_set: {
+    id: 'ivory_dice_set',
+    name: 'Ivory Dice Set',
+    description: 'A pair of carved ivory dice used for gambling and games',
+    value: 100,
+    toolRequired: 'brush',
+    isJunk: false
+  },
+  silver_mirror_pompeii: {
+    id: 'silver_mirror_pompeii',
+    name: 'Silver Hand Mirror',
+    description: 'A polished silver mirror with ornate handle from a wealthy domus',
+    value: 100,
+    toolRequired: 'brush',
+    isJunk: false
+  },
+  petrified_scroll: {
+    id: 'petrified_scroll',
+    name: 'Petrified Scroll',
+    description: 'A papyrus scroll carbonized and preserved by volcanic heat',
+    value: 100,
+    toolRequired: 'hammer_chisel',
+    isJunk: false
+  },
+  basalt_millstone: {
+    id: 'basalt_millstone',
+    name: 'Basalt Millstone',
+    description: 'A heavy volcanic stone mill used for grinding grain into flour',
+    value: 100,
+    toolRequired: 'hammer_chisel',
+    isJunk: false
+  },
+  embedded_bronze_valve: {
+    id: 'embedded_bronze_valve',
+    name: 'Embedded Bronze Valve',
+    description: 'A bronze water valve fused into hardened volcanic rock',
+    value: 100,
+    toolRequired: 'hammer_chisel',
+    isJunk: false
+  },
+
+  // Junk artifacts ($1-5 each)
+  volcanic_ash_clump: {
+    id: 'volcanic_ash_clump',
+    name: 'Volcanic Ash Clump',
+    description: 'A compacted mass of gray volcanic ash',
+    value: 2,
+    toolRequired: 'shovel',
+    isJunk: true
+  },
+  charred_timber: {
+    id: 'charred_timber',
+    name: 'Charred Timber',
+    description: 'A piece of wood carbonized by pyroclastic heat',
+    value: 3,
+    toolRequired: 'shovel',
+    isJunk: true
+  },
+  pumice_chunk: {
+    id: 'pumice_chunk',
+    name: 'Pumice Chunk',
+    description: 'A lightweight volcanic rock full of air pockets',
+    value: 1,
+    toolRequired: 'pickaxe',
+    isJunk: true
+  },
+  fused_coin_mass: {
+    id: 'fused_coin_mass',
+    name: 'Fused Coin Mass',
+    description: 'Several coins melted together by extreme volcanic heat',
+    value: 4,
+    toolRequired: 'brush',
+    isJunk: true
+  },
+  hardened_mortar_lump: {
+    id: 'hardened_mortar_lump',
+    name: 'Hardened Mortar Lump',
+    description: 'A chunk of Roman concrete fused with volcanic rock',
+    value: 5,
+    toolRequired: 'hammer_chisel',
+    isJunk: true
   }
 };
 
@@ -243,15 +393,27 @@ const TOOL_ARTIFACT_MAP = {
   shovel: [
     'amphora', 'oil_lamp', 'votive_statue', 'corroded_nail', 'animal_bone',
     'bronze_speculum', 'garum_amphora', 'terracotta_figurine', 'tegula_legion_stamp',
-    'roof_tile_fragment', 'charcoal_remnants'
+    'roof_tile_fragment', 'charcoal_remnants',
+    'plaster_body_cast', 'carbonized_bread', 'thermopolium_pot', 'garden_fresco_panel',
+    'volcanic_ash_clump', 'charred_timber'
   ],
   pickaxe: [
     'mosaic_tile', 'fresco_fragment', 'stone_fragment',
     'lead_curse_tablet', 'sestertius_coin', 'roman_glass_vessel', 'pilum_tip',
-    'iron_slag'
+    'iron_slag',
+    'marble_venus_statue', 'lararium_shrine', 'volcanic_glass_cameo',
+    'pumice_chunk'
   ],
-  brush: ['denarius_coin', 'signet_ring', 'fibula', 'broken_pottery'],
-  hammer_chisel: ['strigil', 'gladius_pommel', 'weathered_brick']
+  brush: [
+    'denarius_coin', 'signet_ring', 'fibula', 'broken_pottery',
+    'gold_bulla_amulet', 'ivory_dice_set', 'silver_mirror_pompeii',
+    'fused_coin_mass'
+  ],
+  hammer_chisel: [
+    'strigil', 'gladius_pommel', 'weathered_brick',
+    'petrified_scroll', 'basalt_millstone', 'embedded_bronze_valve',
+    'hardened_mortar_lump'
+  ]
 };
 
 // Default game state structure

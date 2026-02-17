@@ -41,6 +41,7 @@ class Game {
     this.museum = null;
     this.toolSidebar = null;
     this.artifactSidebar = null;
+    this.waterAnimator = null;
 
     // Level completion state
     this.isLevelComplete = false;
@@ -89,6 +90,11 @@ class Game {
     // Initialize visual effects
     this.flashEffect = new FlashEffect(this.canvasManager);
     this.confettiSystem = new ConfettiSystem();
+    this.questionMarkEffect = new QuestionMarkEffect();
+    this.onLava = false; // true when player is on a lava tile
+
+    // Initialize water animator
+    this.waterAnimator = new WaterAnimator(40);
 
     // Initialize sprite sheet and animator
     const spriteSheetCanvas = generateSpriteSheet(12345);
@@ -213,7 +219,20 @@ class Game {
       return; // Skip movement, tool use, etc.
     }
 
-    // Process HUD input for tool selection
+    // Process number key tool selection (one-shot)
+    const numKey = this.inputManager.consumeNumberKey();
+    if (numKey) {
+      const toolSlots = this.hudRenderer.toolSlots;
+      const toolId = toolSlots[numKey - 1];
+      if (toolId && this.gameState.player.tools.includes(toolId) &&
+          this.gameState.player.currentTool !== toolId) {
+        this.gameState.player.currentTool = toolId;
+        this.canvasManager.markDirty('ui');
+        this.toolSidebar.update(toolId);
+      }
+    }
+
+    // Process HUD mouse input for tool selection
     const toolChanged = this.hudRenderer.processInput(input, this.gameState);
     if (toolChanged) {
       this.canvasManager.markDirty('ui');
@@ -243,6 +262,16 @@ class Game {
     // Update visual effects
     this.flashEffect.update(deltaTime);
     this.confettiSystem.update(deltaTime);
+    this.waterAnimator.update(deltaTime);
+
+    // Question mark effect: show when player is standing on unexplored (dark) tile
+    let inTheDark = false;
+    if (this.fogOfWar) {
+      const px = Math.floor(this.gameState.player.position.x / 40);
+      const py = Math.floor(this.gameState.player.position.y / 40);
+      inTheDark = this.fogOfWar.getFogState(px, py) === FogState.UNEXPLORED;
+    }
+    this.questionMarkEffect.update(deltaTime, inTheDark);
 
     // Store previous camera position to detect movement
     const prevCameraX = this.camera.worldX;
@@ -320,8 +349,20 @@ class Game {
 
     // Apply movement with time-independent velocity
     // Movement = velocity × speed × deltaTime
-    const moveX = velocityX * this.playerSpeed * deltaSeconds;
-    const moveY = velocityY * this.playerSpeed * deltaSeconds;
+    let moveX = velocityX * this.playerSpeed * deltaSeconds;
+    let moveY = velocityY * this.playerSpeed * deltaSeconds;
+
+    // Apply water current drift if player is on a water tile
+    const grid = this.gameState.level.grid;
+    const tileX = Math.floor(this.gameState.player.position.x / 40);
+    const tileY = Math.floor(this.gameState.player.position.y / 40);
+    if (grid && grid[tileY] && grid[tileY][tileX] &&
+        grid[tileY][tileX].type === 'water' && grid[tileY][tileX].flowDirection) {
+      const flow = grid[tileY][tileX].flowDirection;
+      const driftSpeed = 40; // pixels per second (1 tile/sec)
+      moveX += flow.x * driftSpeed * deltaSeconds;
+      moveY += flow.y * driftSpeed * deltaSeconds;
+    }
 
     // Calculate new position
     let newX = this.gameState.player.position.x + moveX;
@@ -392,15 +433,54 @@ class Game {
    * @param {CanvasRenderingContext2D} ctx - Entities layer context
    */
   renderEntities(ctx) {
+    // Render animated water tiles (covers static water on background layer)
+    this.waterAnimator.render(ctx, this.camera);
+
     // Convert player world position to screen position
     const screenPos = this.camera.worldToScreen(
       this.gameState.player.position.x,
       this.gameState.player.position.y
     );
 
-    // Render player sprite (centered on player position)
-    // Sprite is 40x40, offset by -20 to center on position
-    this.animator.render(ctx, screenPos.x - 20, screenPos.y - 20);
+    // Check if player is standing on a water tile
+    const playerTileX = Math.floor(this.gameState.player.position.x / 40);
+    const playerTileY = Math.floor(this.gameState.player.position.y / 40);
+    const grid = this.gameState.level.grid;
+    const isOnWater = grid && grid[playerTileY] && grid[playerTileY][playerTileX] &&
+      grid[playerTileY][playerTileX].type === 'water';
+
+    // Detect lava: water tile with warm base color (red > blue)
+    const [br, , bb] = this.waterAnimator.baseColor;
+    this.onLava = isOnWater && br > bb;
+
+    if (isOnWater) {
+      // Sink effect: clip bottom of sprite, shift down, add gentle bob
+      const sinkDepth = 10;
+      const bob = Math.sin(performance.now() / 400) * 1.5;
+      const spriteX = screenPos.x - 20;
+      const spriteY = screenPos.y - 20 + sinkDepth + bob;
+      const clipHeight = 40 - sinkDepth;
+
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(spriteX, spriteY, 40, clipHeight);
+      ctx.clip();
+      this.animator.render(ctx, spriteX, spriteY);
+      ctx.restore();
+
+      // Draw small ripple ring around player at water level
+      const rippleY = spriteY + clipHeight;
+      const ripplePhase = performance.now() / 600;
+      const [wr, wg, wb] = this.waterAnimator.baseColor;
+      ctx.strokeStyle = `rgba(${Math.min(255, wr + 120)}, ${Math.min(255, wg + 100)}, ${Math.min(255, wb + 65)}, 0.4)`;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.ellipse(screenPos.x, rippleY, 14 + Math.sin(ripplePhase) * 2, 4, 0, 0, Math.PI * 2);
+      ctx.stroke();
+    } else {
+      // Normal render
+      this.animator.render(ctx, screenPos.x - 20, screenPos.y - 20);
+    }
 
     // Render POIs
     if (this.gameState.level.pois && this.gameState.level.pois.length > 0) {
@@ -457,6 +537,29 @@ class Game {
     // Render flash effect overlay
     this.flashEffect.render(ctx);
 
+    // Render lava warning overlay
+    if (this.onLava) {
+      const pulse = 0.25 + 0.1 * Math.sin(performance.now() / 200);
+      ctx.save();
+      ctx.fillStyle = `rgba(255, 0, 0, ${pulse})`;
+      ctx.fillRect(0, 0, 1440, 960);
+
+      // "TOO HOT!" label
+      const shake = Math.sin(performance.now() / 50) * 3;
+      ctx.font = 'bold 72px monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.shadowColor = 'rgba(255, 60, 0, 0.9)';
+      ctx.shadowBlur = 20;
+      ctx.fillStyle = '#FFDD00';
+      ctx.fillText('TOO HOT!', 720 + shake, 200);
+      ctx.shadowBlur = 0;
+      ctx.restore();
+    }
+
+    // Render question mark border when near fog without stadia rod
+    this.questionMarkEffect.render(ctx, 1440, 960);
+
     // Render tool hint text
     this.toolSystem.renderHint(ctx, 1440, 960);
 
@@ -498,6 +601,14 @@ class Game {
     this.gameState.level.pois = level.pois;
     this.gameState.level.obstacles = level.obstacles || [];
     this.gameState.level.grid = level.grid;
+
+    // Scan for water tiles and set up animation
+    this.waterAnimator.setWaterTiles(level.grid);
+    if (theme.terrainColorOverrides && theme.terrainColorOverrides.water) {
+      this.waterAnimator.setBaseColor(theme.terrainColorOverrides.water);
+    } else {
+      this.waterAnimator.setBaseColor([60, 120, 190]);
+    }
 
     // Update tools for level
     updateToolsForLevel(this.gameState, levelNumber);
