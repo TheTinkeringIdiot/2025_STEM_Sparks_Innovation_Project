@@ -141,7 +141,12 @@ class WaterAnimator {
       const alpha = (sparkle - 0.6) / 0.4 * 0.5;
       const sx = x + ((Math.sin(tilePhase * 3.1) * 0.5 + 0.5) * (size - 4)) + 2;
       const sy = y + ((Math.cos(tilePhase * 5.7) * 0.5 + 0.5) * (size - 4)) + 2;
-      ctx.fillStyle = `rgba(200, 230, 255, ${alpha})`;
+      const [sr, sg, sb] = [
+        Math.min(255, this.baseColor[0] + 140),
+        Math.min(255, this.baseColor[1] + 110),
+        Math.min(255, this.baseColor[2] + 65)
+      ];
+      ctx.fillStyle = `rgba(${sr}, ${sg}, ${sb}, ${alpha})`;
       ctx.fillRect(sx - 1, sy - 1, 2, 2);
     }
   }

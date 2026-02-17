@@ -163,7 +163,70 @@ const LEVEL_THEMES = {
       'A once-thriving port that connected Rome to the world.'
     ]
   },
-  4: { name: 'Mountain Pass' },
+  4: {
+    name: 'Volcanic Ruins',
+
+    // Dark volcanic terrain: heavy stone, ash-gray dirt, no grass, light pumice sand
+    terrainThresholds: [-0.3, -2, 0.5],
+
+    terrainColorOverrides: {
+      stone: [60, 58, 65],    // Dark basalt
+      dirt: [95, 88, 82],     // Volcanic ash
+      grass: [95, 88, 82],    // Disabled (threshold -2), fallback to ash
+      sand: [160, 148, 130],  // Pumice
+      water: [200, 60, 20]    // Lava orange-red
+    },
+
+    // 1 lava river (narrow)
+    rivers: {
+      count: 1,
+      width: 2
+    },
+
+    // Heavy ruins + volcanic rocks, no trees
+    obstacleWeights: [
+      { type: 'ruin_column', weight: 0.30 },
+      { type: 'ruin_wall', weight: 0.35 },
+      { type: 'rock_small', weight: 0.15 },
+      { type: 'rock_large', weight: 0.20 }
+    ],
+
+    decorationChance: 0.10,
+
+    // Exclude all vegetation + shells + sand ripples
+    excludeDecorations: [
+      'grass_tuft', 'flower_yellow', 'flower_purple', 'clover', 'leaf', 'twig',
+      'shell', 'sand_ripple'
+    ],
+
+    // Level 4 has shovel + pickaxe + brush + hammer_chisel
+    artifactPool: {
+      valuable: {
+        shovel: ['plaster_body_cast', 'carbonized_bread', 'thermopolium_pot', 'garden_fresco_panel'],
+        pickaxe: ['marble_venus_statue', 'lararium_shrine', 'volcanic_glass_cameo'],
+        brush: ['gold_bulla_amulet', 'ivory_dice_set', 'silver_mirror_pompeii'],
+        hammer_chisel: ['petrified_scroll', 'basalt_millstone', 'embedded_bronze_valve']
+      },
+      junk: {
+        shovel: ['volcanic_ash_clump', 'charred_timber'],
+        pickaxe: ['pumice_chunk'],
+        brush: ['fused_coin_mass'],
+        hammer_chisel: ['hardened_mortar_lump']
+      }
+    },
+
+    // Pompeii-themed POI naming
+    poiPrefixes: ['Buried', 'Scorched', 'Ash-Covered', 'Petrified', 'Entombed'],
+    poiSuffixes: ['Thermopolium', 'Domus', 'Bakery', 'Atrium', 'Peristyle', 'Basilica'],
+
+    poiDescriptions: [
+      'Volcanic ash preserved this site in a frozen moment of time.',
+      'The ruins of a Pompeii-style town lie buried beneath hardened lava.',
+      'A once-thriving Roman neighborhood entombed by volcanic fury.',
+      'Layers of ash and pumice conceal the remains of daily life.',
+      'The eruption sealed this place like a time capsule for millennia.'
+    ]
+  },
   5: { name: 'Sacred Grove' }
 };
 

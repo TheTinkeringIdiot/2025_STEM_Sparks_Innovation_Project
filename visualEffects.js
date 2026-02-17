@@ -234,3 +234,117 @@ class ConfettiSystem {
     this.particles = [];
   }
 }
+
+/**
+ * Question Mark Border Effect
+ * Renders floating "?" characters around the screen edges when the player
+ * is near unexplored fog without the stadia rod equipped.
+ * Creates a visual hint that the player should switch to their survey tool.
+ */
+class QuestionMarkEffect {
+  constructor() {
+    this.active = false;
+    this.time = 0;
+    this.opacity = 0; // Smooth fade in/out
+
+    // Pre-generate fixed positions around screen border
+    // Each mark has: edge (0-3 = top/right/bottom/left), t (0-1 along edge), phase offset
+    this.marks = [];
+    const count = 24;
+    for (let i = 0; i < count; i++) {
+      this.marks.push({
+        edge: Math.floor(i / 6),         // 6 per edge
+        t: (i % 6 + 0.5) / 6,            // evenly spaced along edge
+        phase: (i * 1.7) % (Math.PI * 2), // unique phase offset
+        size: 56 + (i * 7.3 % 24)        // 56-80px font size
+      });
+    }
+  }
+
+  /**
+   * Updates the effect state based on player conditions
+   * @param {number} deltaTime - Time elapsed in ms
+   * @param {boolean} shouldShow - Whether the effect should currently display
+   */
+  update(deltaTime, shouldShow) {
+    this.time += deltaTime * 0.001;
+
+    // Smooth fade: ramp opacity toward target
+    const target = shouldShow ? 1 : 0;
+    const fadeSpeed = 3.0; // per second
+    const step = fadeSpeed * deltaTime * 0.001;
+    if (this.opacity < target) {
+      this.opacity = Math.min(target, this.opacity + step);
+    } else {
+      this.opacity = Math.max(target, this.opacity - step);
+    }
+
+    this.active = this.opacity > 0.01;
+  }
+
+  /**
+   * Renders floating question marks around screen edges
+   * @param {CanvasRenderingContext2D} ctx - UI layer context
+   * @param {number} w - Canvas width
+   * @param {number} h - Canvas height
+   */
+  render(ctx, w, h) {
+    if (!this.active) return;
+
+    const margin = 30; // distance from screen edge
+    const t = this.time;
+
+    ctx.save();
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    for (const mark of this.marks) {
+      // Position along edge
+      let x, y;
+      switch (mark.edge) {
+        case 0: // top
+          x = mark.t * w;
+          y = margin;
+          break;
+        case 1: // right
+          x = w - margin;
+          y = mark.t * h;
+          break;
+        case 2: // bottom
+          x = mark.t * w;
+          y = h - margin;
+          break;
+        case 3: // left
+          x = margin;
+          y = mark.t * h;
+          break;
+      }
+
+      // Gentle bob
+      const bob = Math.sin(t * 1.5 + mark.phase) * 6;
+      const drift = Math.cos(t * 0.8 + mark.phase * 0.5) * 4;
+      x += (mark.edge % 2 === 0) ? drift : 0;
+      y += (mark.edge % 2 === 0) ? 0 : bob;
+      x += (mark.edge % 2 === 1) ? 0 : 0;
+      y += (mark.edge % 2 === 1) ? 0 : bob;
+
+      // Per-mark fade pulse
+      const pulse = 0.4 + 0.6 * ((Math.sin(t * 2.0 + mark.phase) + 1) / 2);
+      const alpha = this.opacity * pulse * 0.7;
+
+      ctx.font = `bold ${mark.size}px monospace`;
+      // Neon green glow
+      ctx.shadowColor = `rgba(0, 255, 65, ${alpha})`;
+      ctx.shadowBlur = 24;
+      // Dark outline
+      ctx.fillStyle = `rgba(0, 0, 0, ${alpha * 0.6})`;
+      ctx.fillText('?', x + 2, y + 2);
+      // Neon green core
+      ctx.fillStyle = `rgba(57, 255, 20, ${alpha})`;
+      ctx.fillText('?', x, y);
+      ctx.shadowBlur = 0;
+    }
+
+    ctx.restore();
+  }
+}
